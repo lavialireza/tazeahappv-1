@@ -14,7 +14,8 @@ import androidx.compose.ui.unit.dp
 import com.example.bookapp.data.FieldEntity
 import com.example.bookapp.data.SearchResult
 import com.example.bookapp.data.TaziehEntity
-
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
