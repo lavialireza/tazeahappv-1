@@ -1,5 +1,5 @@
 package com.example.bookapp.ui.screens
-
+import androidx.compose.material3.Divider
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -158,7 +158,7 @@ fun SettingsScreen(
             }
 
             Spacer(Modifier.height(32.dp))
-            HorizontalDivider()
+           Divider()
             Spacer(Modifier.height(16.dp))
 
             Text("بروزرسانی محتوا", style = MaterialTheme.typography.bodyLarge)
