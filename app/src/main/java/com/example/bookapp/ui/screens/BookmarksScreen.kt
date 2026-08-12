@@ -11,7 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.bookapp.data.SearchResult
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBackimport com.example.bookapp.data.SearchResult
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
