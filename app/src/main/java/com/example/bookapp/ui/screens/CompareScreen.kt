@@ -1,5 +1,5 @@
 package com.example.bookapp.ui.screens
-
+import androidx.compose.material3.Divider
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -51,7 +51,7 @@ fun CompareScreen(
                 }
             }
 
-            HorizontalDivider(thickness = 2.dp)
+           Divider(thickness = 2.dp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             // نیمه پایین: نقش دوم
             Column(
