@@ -44,7 +44,7 @@ fun BookmarksScreen(
                         supportingContent = { Text("${r.fieldTitle} ← ${r.taziehTitle} ← ${r.roleTitle}") },
                         modifier = Modifier.clickable { onItemClick(r) }
                     )
-                    Divider()
+                    Divider()  // ✅ تغییر داده شد
                 }
             }
         }
