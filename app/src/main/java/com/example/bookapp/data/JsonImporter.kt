@@ -11,14 +11,36 @@ data class ImportResult(
     val errorMessage: String? = null
 )
 
+// ✅ داده‌های موقت برای تبدیل JSON
+data class TempField(
+    val title: String,
+    val taziehs: List<TempTazieh>? = null
+)
+
+data class TempTazieh(
+    val title: String,
+    val roles: List<TempRole>? = null
+)
+
+data class TempRole(
+    val title: String,
+    val sections: List<TempSection>? = null
+)
+
+data class TempSection(
+    val title: String,
+    val content: String,
+    val orderIndex: Int? = null
+)
+
 class JsonImporter(
     private val db: AppDatabase
 ) {
     suspend fun importJson(jsonString: String): ImportResult = withContext(Dispatchers.IO) {
         try {
             val gson = Gson()
-            val type = object : TypeToken<List<FieldEntity>>() {}.type
-            val fields: List<FieldEntity> = gson.fromJson(jsonString, type)
+            val type = object : TypeToken<List<TempField>>() {}.type
+            val fields: List<TempField> = gson.fromJson(jsonString, type)
 
             if (fields.isEmpty()) {
                 return@withContext ImportResult(false, errorMessage = "فایل JSON خالی است")
@@ -26,32 +48,34 @@ class JsonImporter(
 
             var totalSections = 0
 
-            fields.forEach { field ->
-                val fieldId = db.fieldDao().insert(field)
+            fields.forEach { tempField ->
+                val fieldId = db.fieldDao().insert(
+                    FieldEntity(title = tempField.title)
+                )
 
-                field.taziehList?.forEach { tazieh ->
+                tempField.taziehs?.forEach { tempTazieh ->
                     val taziehId = db.taziehDao().insert(
                         TaziehEntity(
                             fieldId = fieldId,
-                            title = tazieh.title
+                            title = tempTazieh.title
                         )
                     )
 
-                    tazieh.roles?.forEach { role ->
+                    tempTazieh.roles?.forEach { tempRole ->
                         val roleId = db.roleDao().insert(
                             RoleEntity(
                                 taziehId = taziehId,
-                                title = role.title
+                                title = tempRole.title
                             )
                         )
 
-                        role.sections?.forEach { section ->
+                        tempRole.sections?.forEach { tempSection ->
                             db.sectionDao().insert(
                                 SectionEntity(
                                     roleId = roleId,
-                                    orderIndex = section.orderIndex ?: 0,
-                                    title = section.title,
-                                    content = section.content
+                                    orderIndex = tempSection.orderIndex ?: 0,
+                                    title = tempSection.title,
+                                    content = tempSection.content
                                 )
                             )
                             totalSections++
