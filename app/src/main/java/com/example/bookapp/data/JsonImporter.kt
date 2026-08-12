@@ -2,6 +2,8 @@ package com.example.bookapp.data
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 data class ImportResult(
     val success: Boolean,
@@ -12,49 +14,47 @@ data class ImportResult(
 class JsonImporter(
     private val db: AppDatabase
 ) {
-    suspend fun importJson(jsonString: String): ImportResult {
-        return try {
+    suspend fun importJson(jsonString: String): ImportResult = withContext(Dispatchers.IO) {
+        try {
             val gson = Gson()
             val type = object : TypeToken<List<FieldEntity>>() {}.type
             val fields: List<FieldEntity> = gson.fromJson(jsonString, type)
 
             if (fields.isEmpty()) {
-                return ImportResult(false, errorMessage = "فایل JSON خالی است")
+                return@withContext ImportResult(false, errorMessage = "فایل JSON خالی است")
             }
 
             var totalSections = 0
 
-            db.withTransaction {
-                fields.forEach { field ->
-                    val fieldId = db.fieldDao().insertField(field)
+            fields.forEach { field ->
+                val fieldId = db.fieldDao().insert(field)
 
-                    field.taziehList?.forEach { tazieh ->
-                        val taziehId = db.taziehDao().insertTazieh(
-                            TaziehEntity(
-                                fieldId = fieldId,
-                                title = tazieh.title
+                field.taziehList?.forEach { tazieh ->
+                    val taziehId = db.taziehDao().insert(
+                        TaziehEntity(
+                            fieldId = fieldId,
+                            title = tazieh.title
+                        )
+                    )
+
+                    tazieh.roles?.forEach { role ->
+                        val roleId = db.roleDao().insert(
+                            RoleEntity(
+                                taziehId = taziehId,
+                                title = role.title
                             )
                         )
 
-                        tazieh.roles?.forEach { role ->
-                            val roleId = db.roleDao().insertRole(
-                                RoleEntity(
-                                    taziehId = taziehId,
-                                    title = role.title
+                        role.sections?.forEach { section ->
+                            db.sectionDao().insert(
+                                SectionEntity(
+                                    roleId = roleId,
+                                    orderIndex = section.orderIndex ?: 0,
+                                    title = section.title,
+                                    content = section.content
                                 )
                             )
-
-                            role.sections?.forEach { section ->
-                                db.sectionDao().insertSection(
-                                    SectionEntity(
-                                        roleId = roleId,
-                                        orderIndex = section.orderIndex ?: 0,
-                                        title = section.title,
-                                        content = section.content
-                                    )
-                                )
-                                totalSections++
-                            }
+                            totalSections++
                         }
                     }
                 }
