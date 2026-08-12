@@ -21,7 +21,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.4"
+        kotlinCompilerExtensionVersion = "1.5.14"  // ✅ تغییر
     }
 
     kotlinOptions {
@@ -46,6 +46,5 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.0")
     ksp("androidx.room:room-compiler:2.6.0")
     
-    // ✅ فقط Gson اضافه شده
     implementation("com.google.code.gson:gson:2.10.1")
 }
