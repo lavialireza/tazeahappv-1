@@ -2,8 +2,12 @@ package com.example.bookapp.data
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 
+// ============================================================
+//  بخش ۱: FieldDao
+// ============================================================
 @Dao
 interface FieldDao {
     @Query("SELECT * FROM fields ORDER BY id")
@@ -12,10 +16,16 @@ interface FieldDao {
     @Insert
     suspend fun insert(field: FieldEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertField(field: FieldEntity): Long
+
     @Query("DELETE FROM fields")
     suspend fun deleteAll()
 }
 
+// ============================================================
+//  بخش ۲: TaziehDao
+// ============================================================
 @Dao
 interface TaziehDao {
     @Query("SELECT * FROM taziehs WHERE fieldId = :fieldId ORDER BY id")
@@ -27,10 +37,16 @@ interface TaziehDao {
     @Insert
     suspend fun insert(tazieh: TaziehEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTazieh(tazieh: TaziehEntity): Long
+
     @Query("DELETE FROM taziehs")
     suspend fun deleteAll()
 }
 
+// ============================================================
+//  بخش ۳: RoleDao
+// ============================================================
 @Dao
 interface RoleDao {
     @Query("SELECT * FROM roles WHERE taziehId = :taziehId ORDER BY id")
@@ -42,10 +58,16 @@ interface RoleDao {
     @Insert
     suspend fun insert(role: RoleEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertRole(role: RoleEntity): Long
+
     @Query("DELETE FROM roles")
     suspend fun deleteAll()
 }
 
+// ============================================================
+//  بخش ۴: SectionDao
+// ============================================================
 @Dao
 interface SectionDao {
     @Query("SELECT * FROM sections WHERE roleId = :roleId ORDER BY orderIndex")
@@ -56,6 +78,9 @@ interface SectionDao {
 
     @Insert
     suspend fun insert(section: SectionEntity): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSection(section: SectionEntity): Long
 
     @Query("DELETE FROM sections")
     suspend fun deleteAll()
