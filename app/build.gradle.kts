@@ -28,7 +28,6 @@ android {
         jvmTarget = "17"
     }
 
-    // ⬇️ این بلاک جدید را اضافه کنید
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -43,11 +42,10 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview:1.5.4")
     implementation("androidx.compose.material3:material3:1.1.2")
     
-    // Room
     implementation("androidx.room:room-runtime:2.6.0")
     implementation("androidx.room:room-ktx:2.6.0")
     ksp("androidx.room:room-compiler:2.6.0")
     
-    // Gson
+    // ✅ فقط Gson اضافه شده
     implementation("com.google.code.gson:gson:2.10.1")
 }
