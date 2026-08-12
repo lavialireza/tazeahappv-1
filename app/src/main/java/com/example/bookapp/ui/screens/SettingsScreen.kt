@@ -1,5 +1,6 @@
 package com.example.bookapp.ui.screens
 
+import androidx.compose.material3.Divider
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -224,7 +225,7 @@ fun SettingsScreen(
             }
 
             Spacer(Modifier.height(24.dp))
-            HorizontalDivider()
+           Divider()
             Spacer(Modifier.height(16.dp))
 
             Text("بروزرسانی محتوا", style = MaterialTheme.typography.bodyLarge)
