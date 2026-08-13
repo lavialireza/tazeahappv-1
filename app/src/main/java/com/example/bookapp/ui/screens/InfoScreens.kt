@@ -34,39 +34,56 @@ fun AboutScreen(
             )
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+        ) {
             Text(
-                "این اپلیکیشن یک کتابخانه دیجیتال از متون تعزیه است که بر اساس " +
+                text = "این اپلیکیشن یک کتابخانه دیجیتال از متون تعزیه است که بر اساس " +
                         "زمینه، تعزیه، نقش و بخش دسته‌بندی شده است."
             )
-            Spacer(Modifier.height(20.dp))
-            Text("آمار مجموعه:", style = MaterialTheme.typography.titleSmall)
-            Spacer(Modifier.height(8.dp))
-            Text("$fieldsCount زمینه")
-            Text("$taziehsCount تعزیه")
-            Text("$rolesCount نقش")
-            Text("$sectionsCount بخش")
+            Spacer(modifier = Modifier.height(20.dp))
+            
+            Text(
+                text = "آمار مجموعه:",
+                style = MaterialTheme.typography.titleSmall
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = "$fieldsCount زمینه")
+            Text(text = "$taziehsCount تعزیه")
+            Text(text = "$rolesCount نقش")
+            Text(text = "$sectionsCount بخش")
 
-            Spacer(Modifier.height(20.dp))
-            Text("آمار مطالعه شما:", style = MaterialTheme.typography.titleSmall)
-            Spacer(Modifier.height(8.dp))
-            Text("$readCount بخش را تا الان خوانده‌اید")
+            Spacer(modifier = Modifier.height(20.dp))
+            
+            Text(
+                text = "آمار مطالعه شما:",
+                style = MaterialTheme.typography.titleSmall
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = "$readCount بخش را تا الان خوانده‌اید")
             if (streakDays > 1) {
-                Text("$streakDays روز متوالی سر زده‌اید 🔥")
+                Text(text = "$streakDays روز متوالی سر زده‌اید 🔥")
             }
 
-            Spacer(Modifier.height(24.dp))
-            Button(onClick = {
-                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(
-                        android.content.Intent.EXTRA_TEXT,
-                        "این اپ رو ببین: «تعزیه و شبیه‌خوانی» — کتابخانه‌ای کامل و آفلاین از نسخه‌های تعزیه.\nhttps://github.com/lavialireza/taziehapp"
-                    )
-                }
-                context.startActivity(android.content.Intent.createChooser(intent, "معرفی اپ به دیگران"))
-            }) {
-                Text("معرفی این اپ به دیگران")
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            Button(
+                onClick = {
+                    val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(
+                            android.content.Intent.EXTRA_TEXT,
+                            "این اپ رو ببین: «تعزیه و شبیه‌خوانی» — کتابخانه‌ای کامل و آفلاین از نسخه‌های تعزیه.\nhttps://github.com/lavialireza/taziehapp"
+                        )
+                    }
+                    context.startActivity(android.content.Intent.createChooser(intent, "معرفی اپ به دیگران"))
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = "معرفی این اپ به دیگران")
             }
         }
     }
@@ -74,7 +91,10 @@ fun AboutScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun VersionScreen(onBack: () -> Unit) {
+fun VersionScreen(
+    onBack: () -> Unit
+) {
+    val context = LocalContext.current
     Scaffold(
         topBar = {
             TopAppBar(
@@ -87,224 +107,13 @@ fun VersionScreen(onBack: () -> Unit) {
             )
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
-            Text("نسخه برنامه: ${BuildConfig.VERSION_NAME}")
-        }
-    }
-package com.example.bookapp.ui.screens
-
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
-import android.content.Intent
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Label
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import com.example.bookapp.data.Prefs
-import com.example.bookapp.data.SectionEntity
-import com.example.bookapp.data.SpeechHelper
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun TextScreen(
-    title: String,
-    content: String,
-    isBookmarked: Boolean,
-    onToggleBookmark: () -> Unit,
-    sectionId: Long? = null,
-    onBack: () -> Unit
-) {
-    val context = LocalContext.current
-    var isSpeaking by remember { mutableStateOf(false) }
-    var statusMessage by remember { mutableStateOf<String?>(null) }
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    val speechHelper = remember {
-        SpeechHelper(context) { status ->
-            when (status) {
-                "no_engine" -> statusMessage = "موتور خواندن صوتی روی این گوشی در دسترس نیست"
-                "no_persian_voice" -> statusMessage = "صدای فارسی روی این گوشی نصب نیست (به تنظیمات گوشی مراجعه کنید)"
-                "error" -> statusMessage = "خطا در پخش صدا"
-            }
-            if (status == "done" || status == "error") isSpeaking = false
-        }
-    }
-
-    LaunchedEffect(statusMessage) {
-        statusMessage?.let {
-            snackbarHostState.showSnackbar(it)
-            isSpeaking = false
-            statusMessage = null
-        }
-    }
-    var tag by remember(sectionId) { mutableStateOf(sectionId?.let { Prefs.getTag(context, it) }) }
-    var showTagDialog by remember { mutableStateOf(false) }
-
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-
-    DisposableEffect(Unit) {
-        onDispose { speechHelper.shutdown() }
-    }
-
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                scrollBehavior = scrollBehavior,
-                title = { Text(title) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "بازگشت")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = {
-                        if (isSpeaking) {
-                            speechHelper.stop()
-                            isSpeaking = false
-                        } else {
-                            speechHelper.speak(content)
-                            isSpeaking = true
-                        }
-                    }) {
-                        Icon(
-                            if (isSpeaking) Icons.Filled.Stop else Icons.Filled.PlayArrow,
-                            contentDescription = if (isSpeaking) "توقف خواندن" else "خواندن صوتی"
-                        )
-                    }
-                    if (sectionId != null) {
-                        IconButton(onClick = { showTagDialog = true }) {
-                            Icon(Icons.Filled.Label, contentDescription = "برچسب شخصی")
-                        }
-                    }
-                    IconButton(onClick = onToggleBookmark) {
-                        Icon(
-                            if (isBookmarked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                            contentDescription = "نشان کردن"
-                        )
-                    }
-                    IconButton(onClick = { copyToClipboard(context, title, content) }) {
-                        Icon(Icons.Filled.ContentCopy, contentDescription = "کپی متن")
-                    }
-                    IconButton(onClick = { shareText(context, title, content) }) {
-                        Icon(Icons.Filled.Share, contentDescription = "اشتراک‌گذاری")
-                    }
-                }
-            )
-        }
-    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp)
-                .verticalScroll(rememberScrollState())
         ) {
-            if (!tag.isNullOrBlank()) {
-                AssistChip(
-                    onClick = { showTagDialog = true },
-                    label = { Text(tag!!) }
-                )
-                Spacer(Modifier.height(8.dp))
-            }
-            Text(content, style = MaterialTheme.typography.bodyLarge)
-        }
-    }
-
-    if (showTagDialog && sectionId != null) {
-        var input by remember { mutableStateOf(tag ?: "") }
-        AlertDialog(
-            onDismissRequest = { showTagDialog = false },
-            title = { Text("برچسب شخصی") },
-            text = {
-                OutlinedTextField(
-                    value = input,
-                    onValueChange = { input = it },
-                    label = { Text("مثلاً: حفظ کنم، برای مجلس بعدی") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    Prefs.setTag(context, sectionId, input)
-                    tag = input.ifBlank { null }
-                    showTagDialog = false
-                }) { Text("ذخیره") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showTagDialog = false }) { Text("انصراف") }
-            }
-        )
-    }
-}
-
-private fun copyToClipboard(context: Context, title: String, content: String) {
-    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    val clip = ClipData.newPlainText(title, content)
-    clipboard.setPrimaryClip(clip)
-}
-
-private fun shareText(context: Context, title: String, content: String) {
-    val intent = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
-        putExtra(Intent.EXTRA_SUBJECT, title)
-        putExtra(Intent.EXTRA_TEXT, "$title\n\n$content")
-    }
-    context.startActivity(Intent.createChooser(intent, "اشتراک‌گذاری"))
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun TextPagerScreen(
-    sections: List<SectionEntity>,
-    startIndex: Int,
-    isBookmarked: (Long) -> Boolean,
-    onToggleBookmark: (Long) -> Unit,
-    onPageShown: (Long) -> Unit,
-    onBack: () -> Unit
-) {
-    val pagerState = rememberPagerState(
-        initialPage = startIndex.coerceIn(0, (sections.size - 1).coerceAtLeast(0))
-    ) { sections.size }
-
-    LaunchedEffect(pagerState.currentPage) {
-        if (sections.isNotEmpty()) {
-            onPageShown(sections[pagerState.currentPage].id)
-        }
-    }
-
-    HorizontalPager(state = pagerState) { page ->
-        val section = sections[page]
-        Column(Modifier.fillMaxSize()) {
-            TextScreen(
-                title = "${section.title}  (${page + 1}/${sections.size})",
-                content = section.content,
-                isBookmarked = isBookmarked(section.id),
-                onToggleBookmark = { onToggleBookmark(section.id) },
-                sectionId = section.id,
-                onBack = onBack
-            )
+            Text(text = "نسخه برنامه: ${BuildConfig.VERSION_NAME}")
         }
     }
 }
-
