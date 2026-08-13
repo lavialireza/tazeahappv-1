@@ -1,5 +1,5 @@
 package com.example.bookapp.ui.screens
-import androidx.compose.material3.Divider
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,8 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.example.bookapp.data.FieldEntity
 import com.example.bookapp.data.SearchResult
 import com.example.bookapp.data.TaziehEntity
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
@@ -128,7 +127,7 @@ fun SearchScreen(
                             supportingContent = { Text("${r.fieldTitle} ← ${r.taziehTitle} ← ${r.roleTitle}") },
                             modifier = Modifier.clickable { onResultClick(r) }
                         )
-                       Divider()
+                        Divider()
                     }
                 }
             }
