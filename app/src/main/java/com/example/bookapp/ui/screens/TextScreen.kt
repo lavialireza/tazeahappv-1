@@ -4,7 +4,10 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -23,6 +26,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.bookapp.data.Prefs
+import com.example.bookapp.data.SectionEntity
 import com.example.bookapp.data.SpeechHelper
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -176,17 +180,17 @@ private fun shareText(context: Context, title: String, content: String) {
     context.startActivity(Intent.createChooser(intent, "اشتراک‌گذاری"))
 }
 
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TextPagerScreen(
-    sections: List<com.example.bookapp.data.SectionEntity>,
+    sections: List<SectionEntity>,
     startIndex: Int,
     isBookmarked: (Long) -> Boolean,
     onToggleBookmark: (Long) -> Unit,
     onPageShown: (Long) -> Unit,
     onBack: () -> Unit
 ) {
-    val pagerState = androidx.compose.foundation.pager.rememberPagerState(
+    val pagerState = rememberPagerState(
         initialPage = startIndex.coerceIn(0, (sections.size - 1).coerceAtLeast(0))
     ) { sections.size }
 
@@ -196,7 +200,7 @@ fun TextPagerScreen(
         }
     }
 
-    androidx.compose.foundation.pager.HorizontalPager(state = pagerState) { page ->
+    HorizontalPager(state = pagerState) { page ->
         val section = sections[page]
         Column(Modifier.fillMaxSize()) {
             TextScreen(
