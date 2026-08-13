@@ -307,4 +307,4 @@ fun TextPagerScreen(
         }
     }
 }
-}
+
