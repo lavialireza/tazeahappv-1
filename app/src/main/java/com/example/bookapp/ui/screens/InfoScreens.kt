@@ -94,7 +94,6 @@ fun AboutScreen(
 fun VersionScreen(
     onBack: () -> Unit
 ) {
-    val context = LocalContext.current
     Scaffold(
         topBar = {
             TopAppBar(
