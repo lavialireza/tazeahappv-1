@@ -2,7 +2,7 @@ package com.example.bookapp.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -28,7 +28,7 @@ fun AboutScreen(
                 title = { Text("درباره برنامه") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "بازگشت")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "بازگشت")
                     }
                 }
             )
@@ -100,7 +100,7 @@ fun VersionScreen(
                 title = { Text("ورژن برنامه") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "بازگشت")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "بازگشت")
                     }
                 }
             )
