@@ -1,6 +1,5 @@
 package com.example.bookapp.ui.screens
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -11,9 +10,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.bookapp.BuildConfig
 
-// ============================================================
-//  ✅ تابع AboutScreen (نگه داشته شود)
-// ============================================================
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(
@@ -76,14 +72,6 @@ fun AboutScreen(
     }
 }
 
-// ============================================================
-//  ❌ تابع SettingsScreen (حذف شده)
-//  دیگر اینجا نیست!
-// ============================================================
-
-// ============================================================
-//  ✅ تابع VersionScreen (نگه داشته شود)
-// ============================================================
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VersionScreen(onBack: () -> Unit) {
