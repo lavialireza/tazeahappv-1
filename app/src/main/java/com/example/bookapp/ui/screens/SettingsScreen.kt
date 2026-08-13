@@ -1,7 +1,5 @@
 package com.example.bookapp.ui.screens
-import androidx.compose.material.icons.filled.UploadFile
 
-import androidx.compose.material3.Divider
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -20,8 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.example.bookapp.data.AppDatabase
 import com.example.bookapp.data.JsonImporter
 import kotlinx.coroutines.launch
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
@@ -44,7 +41,6 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    // ===== Launcher برای انتخاب فایل JSON =====
     val jsonPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
@@ -106,7 +102,7 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // ===== کارت واردات JSON (جدید) =====
+            // کارت واردات JSON
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -176,7 +172,7 @@ fun SettingsScreen(
                 }
             }
 
-            // ===== تنظیمات موجود =====
+            // تنظیمات موجود
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -227,7 +223,7 @@ fun SettingsScreen(
             }
 
             Spacer(Modifier.height(24.dp))
-           Divider()
+            Divider()
             Spacer(Modifier.height(16.dp))
 
             Text("بروزرسانی محتوا", style = MaterialTheme.typography.bodyLarge)
