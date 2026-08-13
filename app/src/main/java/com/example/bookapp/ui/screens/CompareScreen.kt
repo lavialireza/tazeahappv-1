@@ -1,5 +1,5 @@
 package com.example.bookapp.ui.screens
-import androidx.compose.material3.Divider
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -10,8 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.bookapp.data.SectionEntity
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CompareScreen(
@@ -35,7 +34,6 @@ fun CompareScreen(
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
 
-            // نیمه بالا: نقش اول
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -52,9 +50,8 @@ fun CompareScreen(
                 }
             }
 
-           Divider(thickness = 2.dp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Divider(thickness = 2.dp)
 
-            // نیمه پایین: نقش دوم
             Column(
                 modifier = Modifier
                     .weight(1f)
