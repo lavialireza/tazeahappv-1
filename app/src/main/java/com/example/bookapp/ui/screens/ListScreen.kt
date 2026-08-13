@@ -7,8 +7,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -37,7 +37,7 @@ fun GenericListScreen(
                 navigationIcon = {
                     if (onBack != null) {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "بازگشت")
+                            Icon(Icons.Default.ArrowBack, contentDescription = "بازگشت")
                         }
                     }
                 },
@@ -97,7 +97,7 @@ private fun ListCard(item: ListItemData, selected: Boolean = false, onClick: () 
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        Icons.AutoMirrored.Filled.MenuBook,
+                        Icons.Default.MenuBook,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onPrimary
                     )
