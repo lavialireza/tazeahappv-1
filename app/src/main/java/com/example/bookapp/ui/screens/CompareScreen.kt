@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -26,7 +26,7 @@ fun CompareScreen(
                 title = { Text("مقایسه: $roleATitle ↔ $roleBTitle") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "بازگشت")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "بازگشت")
                     }
                 }
             )
@@ -34,6 +34,7 @@ fun CompareScreen(
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
 
+            // نیمه بالا: نقش اول
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -50,8 +51,9 @@ fun CompareScreen(
                 }
             }
 
-            Divider(thickness = 2.dp)
+            HorizontalDivider(thickness = 2.dp)
 
+            // نیمه پایین: نقش دوم
             Column(
                 modifier = Modifier
                     .weight(1f)

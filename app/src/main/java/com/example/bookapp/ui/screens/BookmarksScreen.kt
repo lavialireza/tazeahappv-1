@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -26,36 +26,25 @@ fun BookmarksScreen(
                 title = { Text("علاقه‌مندی‌ها") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "بازگشت")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "بازگشت")
                     }
                 }
             )
         }
     ) { padding ->
         if (items.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 Text("هنوز چیزی نشان نکرده‌اید")
             }
         } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-            ) {
-                items(items) { item ->
+            LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
+                items(items) { r ->
                     ListItem(
-                        headlineContent = { Text(item.sectionTitle) },
-                        supportingContent = {
-                            Text("${item.fieldTitle} ← ${item.taziehTitle} ← ${item.roleTitle}")
-                        },
-                        modifier = Modifier.clickable { onItemClick(item) }
+                        headlineContent = { Text(r.sectionTitle) },
+                        supportingContent = { Text("${r.fieldTitle} ← ${r.taziehTitle} ← ${r.roleTitle}") },
+                        modifier = Modifier.clickable { onItemClick(r) }
                     )
-                    Divider()
+                    HorizontalDivider()
                 }
             }
         }

@@ -4,14 +4,11 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -26,7 +23,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.bookapp.data.Prefs
-import com.example.bookapp.data.SectionEntity
 import com.example.bookapp.data.SpeechHelper
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,6 +61,7 @@ fun TextScreen(
     var tag by remember(sectionId) { mutableStateOf(sectionId?.let { Prefs.getTag(context, it) }) }
     var showTagDialog by remember { mutableStateOf(false) }
 
+    // حالت تمام‌صفحه: نوار بالا هنگام اسکرول به پایین جمع می‌شود
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     DisposableEffect(Unit) {
@@ -80,7 +77,7 @@ fun TextScreen(
                 title = { Text(title) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "بازگشت")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "بازگشت")
                     }
                 },
                 actions = {
@@ -127,10 +124,7 @@ fun TextScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             if (!tag.isNullOrBlank()) {
-                AssistChip(
-                    onClick = { showTagDialog = true },
-                    label = { Text(tag!!) }
-                )
+                AssistChip(onClick = { showTagDialog = true }, label = { Text(tag!!) })
                 Spacer(Modifier.height(8.dp))
             }
             Text(content, style = MaterialTheme.typography.bodyLarge)
@@ -180,17 +174,21 @@ private fun shareText(context: Context, title: String, content: String) {
     context.startActivity(Intent.createChooser(intent, "اشتراک‌گذاری"))
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+/**
+ * حالت مطالعه حرفه‌ای: امکان سوایپ (کشیدن انگشت) بین بخش‌های یک نقش،
+ * بدون نیاز به برگشتن به فهرست بعد از هر بخش.
+ */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun TextPagerScreen(
-    sections: List<SectionEntity>,
+    sections: List<com.example.bookapp.data.SectionEntity>,
     startIndex: Int,
     isBookmarked: (Long) -> Boolean,
     onToggleBookmark: (Long) -> Unit,
     onPageShown: (Long) -> Unit,
     onBack: () -> Unit
 ) {
-    val pagerState = rememberPagerState(
+    val pagerState = androidx.compose.foundation.pager.rememberPagerState(
         initialPage = startIndex.coerceIn(0, (sections.size - 1).coerceAtLeast(0))
     ) { sections.size }
 
@@ -200,7 +198,7 @@ fun TextPagerScreen(
         }
     }
 
-    HorizontalPager(state = pagerState) { page ->
+    androidx.compose.foundation.pager.HorizontalPager(state = pagerState) { page ->
         val section = sections[page]
         Column(Modifier.fillMaxSize()) {
             TextScreen(

@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import com.example.bookapp.data.SearchResult
 
+// رنگ سبز اختصاصی برای گزینه «لیست تعزیه‌ها» (مستقل از تم انتخابی)
 private val TaziehGreen = Color(0xFF2E7D4F)
 
 @OptIn(ExperimentalMaterial3Api::class)

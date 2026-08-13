@@ -7,8 +7,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -18,6 +18,10 @@ import androidx.compose.ui.unit.dp
 
 data class ListItemData(val id: Long, val title: String, val subtitle: String? = null)
 
+/**
+ * صفحه فهرست عمومی به شکل کارت‌های گرافیکی: برای دسته‌بندی‌ها، زمینه‌ها،
+ * کتاب‌ها، فصل‌ها و بخش‌ها استفاده می‌شود.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GenericListScreen(
@@ -37,7 +41,7 @@ fun GenericListScreen(
                 navigationIcon = {
                     if (onBack != null) {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "بازگشت")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "بازگشت")
                         }
                     }
                 },
@@ -97,7 +101,7 @@ private fun ListCard(item: ListItemData, selected: Boolean = false, onClick: () 
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        Icons.Default.MenuBook,
+                        Icons.AutoMirrored.Filled.MenuBook,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onPrimary
                     )
@@ -118,6 +122,7 @@ private fun ListCard(item: ListItemData, selected: Boolean = false, onClick: () 
     }
 }
 
+/** یک الگوی هندسی ساده و ملایم (شبیه نقوش اسلیمی) که پشت کارت‌ها کشیده می‌شود. */
 @Composable
 private fun DecorativePattern(modifier: Modifier = Modifier, color: androidx.compose.ui.graphics.Color) {
     androidx.compose.foundation.Canvas(modifier = modifier) {

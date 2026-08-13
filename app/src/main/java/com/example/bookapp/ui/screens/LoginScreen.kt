@@ -5,7 +5,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -36,7 +35,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
             value = password,
             onValueChange = { password = it },
             label = { Text("رمز عبور") },
-            visualTransformation = PasswordVisualTransformation(),
+            visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(20.dp))
@@ -48,6 +47,8 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
 
         Button(
             onClick = {
+                // TODO: اینجا می‌توانید اعتبارسنجی واقعی (سرور یا دیتابیس محلی) قرار دهید.
+                // فعلاً هر نام‌کاربری/رمز غیرخالی پذیرفته می‌شود.
                 if (username.isNotBlank() && password.isNotBlank()) {
                     onLoginSuccess()
                 } else {
