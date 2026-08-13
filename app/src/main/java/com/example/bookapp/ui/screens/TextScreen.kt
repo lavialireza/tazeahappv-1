@@ -24,8 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.bookapp.data.Prefs
 import com.example.bookapp.data.SpeechHelper
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TextScreen(
@@ -62,7 +61,6 @@ fun TextScreen(
     var tag by remember(sectionId) { mutableStateOf(sectionId?.let { Prefs.getTag(context, it) }) }
     var showTagDialog by remember { mutableStateOf(false) }
 
-    // حالت تمام‌صفحه: نوار بالا هنگام اسکرول به پایین جمع می‌شود
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     DisposableEffect(Unit) {
@@ -125,7 +123,10 @@ fun TextScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             if (!tag.isNullOrBlank()) {
-                AssistChip(onClick = { showTagDialog = true }, label = { Text(tag!!) })
+                AssistChip(
+                    onClick = { showTagDialog = true },
+                    label = { Text(tag!!) }
+                )
                 Spacer(Modifier.height(8.dp))
             }
             Text(content, style = MaterialTheme.typography.bodyLarge)
@@ -175,10 +176,6 @@ private fun shareText(context: Context, title: String, content: String) {
     context.startActivity(Intent.createChooser(intent, "اشتراک‌گذاری"))
 }
 
-/**
- * حالت مطالعه حرفه‌ای: امکان سوایپ (کشیدن انگشت) بین بخش‌های یک نقش،
- * بدون نیاز به برگشتن به فهرست بعد از هر بخش.
- */
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun TextPagerScreen(
