@@ -196,4 +196,32 @@ object Prefs {
             }
             .toMap()
     }
+
+    private const val KEY_APP_PASSWORD = "app_password"
+
+    /** رمز عبور برنامه؛ اگر خالی باشد یعنی هنوز رمزی تنظیم نشده و ورود بدون رمز آزاد است */
+    fun getAppPassword(context: Context): String {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_APP_PASSWORD, "") ?: ""
+    }
+
+    fun setAppPassword(context: Context, newPassword: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_APP_PASSWORD, newPassword).apply()
+    }
+
+    private const val KEY_PROCESSED_CONTENT_FILES = "processed_content_files"
+
+    /** نام فایل‌های JSON محتوایی که قبلاً در دیتابیس ادغام شده‌اند */
+    fun getProcessedContentFiles(context: Context): Set<String> {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getStringSet(KEY_PROCESSED_CONTENT_FILES, emptySet()) ?: emptySet()
+    }
+
+    fun addProcessedContentFiles(context: Context, fileNames: Collection<String>) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val current = getProcessedContentFiles(context).toMutableSet()
+        current.addAll(fileNames)
+        prefs.edit().putStringSet(KEY_PROCESSED_CONTENT_FILES, current).apply()
+    }
 }

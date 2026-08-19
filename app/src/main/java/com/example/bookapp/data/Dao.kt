@@ -9,6 +9,9 @@ interface FieldDao {
     @Query("SELECT * FROM fields ORDER BY id")
     suspend fun getAll(): List<FieldEntity>
 
+    @Query("SELECT * FROM fields WHERE title = :title LIMIT 1")
+    suspend fun getByTitle(title: String): FieldEntity?
+
     @Insert
     suspend fun insert(field: FieldEntity): Long
 
@@ -27,6 +30,9 @@ interface TaziehDao {
     @Query("SELECT * FROM taziehs WHERE id = :taziehId")
     suspend fun getById(taziehId: Long): TaziehEntity?
 
+    @Query("SELECT * FROM taziehs WHERE fieldId = :fieldId AND title = :title LIMIT 1")
+    suspend fun getByTitle(fieldId: Long, title: String): TaziehEntity?
+
     @Insert
     suspend fun insert(tazieh: TaziehEntity): Long
 
@@ -42,6 +48,9 @@ interface RoleDao {
     @Query("SELECT * FROM roles WHERE id = :roleId")
     suspend fun getById(roleId: Long): RoleEntity
 
+    @Query("SELECT * FROM roles WHERE taziehId = :taziehId AND title = :title LIMIT 1")
+    suspend fun getByTitle(taziehId: Long, title: String): RoleEntity?
+
     @Insert
     suspend fun insert(role: RoleEntity): Long
 
@@ -56,6 +65,9 @@ interface SectionDao {
 
     @Query("SELECT * FROM sections WHERE id = :sectionId")
     suspend fun getById(sectionId: Long): SectionEntity
+
+    @Query("SELECT COALESCE(MAX(orderIndex), -1) FROM sections WHERE roleId = :roleId")
+    suspend fun getMaxOrderIndex(roleId: Long): Int
 
     @Insert
     suspend fun insert(section: SectionEntity): Long

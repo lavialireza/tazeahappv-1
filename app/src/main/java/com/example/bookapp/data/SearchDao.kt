@@ -126,4 +126,23 @@ interface SearchDao {
 
     @Query("SELECT COUNT(*) FROM sections")
     suspend fun countSections(): Int
+
+    @Query(
+        """
+        SELECT
+            sections.id AS sectionId,
+            sections.title AS sectionTitle,
+            roles.title AS roleTitle,
+            taziehs.title AS taziehTitle,
+            fields.title AS fieldTitle
+        FROM sections
+        INNER JOIN roles ON sections.roleId = roles.id
+        INNER JOIN taziehs ON roles.taziehId = taziehs.id
+        INNER JOIN fields ON taziehs.fieldId = fields.id
+        WHERE sections.title = :sectionTitle AND sections.id != :excludeSectionId
+        ORDER BY fields.title, taziehs.title, roles.title
+        LIMIT 20
+        """
+    )
+    suspend fun getRelatedByTitle(sectionTitle: String, excludeSectionId: Long): List<SearchResult>
 }

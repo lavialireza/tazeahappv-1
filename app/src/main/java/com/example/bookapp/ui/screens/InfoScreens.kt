@@ -196,6 +196,20 @@ fun SettingsScreen(
             HorizontalDivider()
             Spacer(Modifier.height(16.dp))
 
+            Text("تغییر رمز عبور", style = MaterialTheme.typography.bodyLarge)
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "اگر رمزی تنظیم نکنید، ورود به برنامه بدون رمز آزاد خواهد بود.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(12.dp))
+            ChangePasswordSection()
+
+            Spacer(Modifier.height(32.dp))
+            HorizontalDivider()
+            Spacer(Modifier.height(16.dp))
+
             Text("پشتیبان‌گیری", style = MaterialTheme.typography.bodyLarge)
             Spacer(Modifier.height(4.dp))
             Text(
@@ -230,6 +244,80 @@ private fun ThemeOption(label: String, value: String, current: String, onSelect:
         onClick = { onSelect(value) },
         label = { Text(label) }
     )
+}
+
+@Composable
+private fun ChangePasswordSection() {
+    val context = LocalContext.current
+    var currentPassword by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var message by remember { mutableStateOf<String?>(null) }
+    var isError by remember { mutableStateOf(false) }
+    val hasPasswordSet = Prefs.getAppPassword(context).isNotBlank()
+
+    Column {
+        if (hasPasswordSet) {
+            OutlinedTextField(
+                value = currentPassword,
+                onValueChange = { currentPassword = it },
+                label = { Text("رمز فعلی") },
+                singleLine = true,
+                visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(8.dp))
+        }
+        OutlinedTextField(
+            value = newPassword,
+            onValueChange = { newPassword = it },
+            label = { Text("رمز جدید (برای غیرفعال‌کردن رمز، خالی بگذارید)") },
+            singleLine = true,
+            visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(
+            value = confirmPassword,
+            onValueChange = { confirmPassword = it },
+            label = { Text("تکرار رمز جدید") },
+            singleLine = true,
+            visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(12.dp))
+        message?.let {
+            Text(
+                it,
+                color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.bodySmall
+            )
+            Spacer(Modifier.height(8.dp))
+        }
+        Button(onClick = {
+            val savedPassword = Prefs.getAppPassword(context)
+            when {
+                savedPassword.isNotBlank() && currentPassword != savedPassword -> {
+                    isError = true
+                    message = "رمز فعلی درست نیست"
+                }
+                newPassword != confirmPassword -> {
+                    isError = true
+                    message = "رمز جدید و تکرار آن یکسان نیستند"
+                }
+                else -> {
+                    Prefs.setAppPassword(context, newPassword)
+                    isError = false
+                    message = if (newPassword.isBlank()) "رمز عبور غیرفعال شد" else "رمز عبور با موفقیت تغییر کرد ✅"
+                    currentPassword = ""
+                    newPassword = ""
+                    confirmPassword = ""
+                }
+            }
+        }) {
+            Text("ذخیره رمز")
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

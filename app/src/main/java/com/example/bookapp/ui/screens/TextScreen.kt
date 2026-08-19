@@ -16,13 +16,16 @@ import androidx.compose.material.icons.filled.Label
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.bookapp.data.Prefs
+import com.example.bookapp.data.SearchResult
 import com.example.bookapp.data.SpeechHelper
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,6 +36,8 @@ fun TextScreen(
     isBookmarked: Boolean,
     onToggleBookmark: () -> Unit,
     sectionId: Long? = null,
+    relatedSections: List<SearchResult> = emptyList(),
+    onRelatedClick: (SearchResult) -> Unit = {},
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -128,6 +133,38 @@ fun TextScreen(
                 Spacer(Modifier.height(8.dp))
             }
             Text(content, style = MaterialTheme.typography.bodyLarge)
+
+            if (relatedSections.isNotEmpty()) {
+                Spacer(Modifier.height(24.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(16.dp))
+                Text("بخش‌های مرتبط (هم‌نام)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
+                relatedSections.forEach { related ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        onClick = { onRelatedClick(related) }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null)
+                            Spacer(Modifier.width(10.dp))
+                            Column {
+                                Text(related.roleTitle, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                                Text(
+                                    "${related.taziehTitle} · ${related.fieldTitle}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 

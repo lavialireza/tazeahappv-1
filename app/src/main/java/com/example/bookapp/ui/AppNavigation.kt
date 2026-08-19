@@ -25,7 +25,7 @@ import com.example.bookapp.data.NoteEntity
 import com.example.bookapp.data.Prefs
 import com.example.bookapp.data.SearchResult
 import com.example.bookapp.data.SectionEntity
-import com.example.bookapp.data.seedDatabaseIfEmpty
+import com.example.bookapp.data.syncLocalContentFiles
 import com.example.bookapp.data.syncRemoteContent
 import com.example.bookapp.ui.screens.*
 import kotlinx.coroutines.launch
@@ -67,7 +67,7 @@ fun AppNavigation(
     val navController: NavHostController = rememberNavController()
 
     LaunchedEffect(Unit) {
-        seedDatabaseIfEmpty(context, db)
+        syncLocalContentFiles(context, db)
     }
 
     // مقصد بعد از ورود: اگر از میان‌بر آیکون باز شده باشد، مستقیم به آن صفحه می‌رویم
@@ -489,6 +489,7 @@ fun AppNavigation(
             var title by remember { mutableStateOf("") }
             var content by remember { mutableStateOf("") }
             var bookmarked by remember { mutableStateOf(Prefs.isBookmarked(context, sectionId)) }
+            var relatedSections by remember { mutableStateOf(listOf<com.example.bookapp.data.SearchResult>()) }
             LaunchedEffect(sectionId) {
                 val section = db.sectionDao().getById(sectionId)
                 title = section.title
@@ -496,6 +497,7 @@ fun AppNavigation(
                 bookmarked = Prefs.isBookmarked(context, sectionId)
                 Prefs.addRecent(context, sectionId)
                 Prefs.markSectionRead(context, sectionId)
+                relatedSections = db.searchDao().getRelatedByTitle(section.title, sectionId)
             }
             TextScreen(
                 title = title,
@@ -505,6 +507,8 @@ fun AppNavigation(
                     bookmarked = Prefs.toggleBookmark(context, sectionId)
                 },
                 sectionId = sectionId,
+                relatedSections = relatedSections,
+                onRelatedClick = { related -> navController.navigate("text/${related.sectionId}") },
                 onBack = { navController.popBackStack() }
             )
         }
