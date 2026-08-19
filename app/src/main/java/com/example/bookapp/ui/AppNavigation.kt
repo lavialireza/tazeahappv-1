@@ -1,6 +1,10 @@
 package com.example.bookapp.ui
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -9,6 +13,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -31,6 +36,8 @@ private const val ROUTE_MAIN_MENU = "main_menu"
 private const val ROUTE_SEARCH = "search"
 private const val ROUTE_BOOKMARKS = "bookmarks"
 private const val ROUTE_NOTES = "notes"
+private const val ROUTE_MY_ROLE = "my_role"
+private const val ROUTE_REHEARSAL = "rehearsal/{roleId}/{roleTitle}"
 private const val ROUTE_ABOUT = "about"
 private const val ROUTE_SETTINGS = "settings"
 private const val ROUTE_VERSION = "version"
@@ -119,6 +126,7 @@ fun AppNavigation(
                 onOpenSearch = { navController.navigate(ROUTE_SEARCH) },
                 onOpenBookmarks = { navController.navigate(ROUTE_BOOKMARKS) },
                 onOpenNotes = { navController.navigate(ROUTE_NOTES) },
+                onOpenMyRole = { navController.navigate(ROUTE_MY_ROLE) },
                 onOpenAbout = { navController.navigate(ROUTE_ABOUT) },
                 onOpenSettings = { navController.navigate(ROUTE_SETTINGS) },
                 onOpenVersion = { navController.navigate(ROUTE_VERSION) },
@@ -182,6 +190,61 @@ fun AppNavigation(
                         reload()
                     }
                 },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(ROUTE_MY_ROLE) {
+            var items by remember { mutableStateOf(listOf<MyRoleItem>()) }
+            val scope = androidx.compose.runtime.rememberCoroutineScope()
+
+            suspend fun reloadMyRoles() {
+                val saved = Prefs.getAllMyRoles(context)
+                items = saved.mapNotNull { (taziehId, roleId) ->
+                    val tazieh = db.taziehDao().getById(taziehId) ?: return@mapNotNull null
+                    val role = try { db.roleDao().getById(roleId) } catch (e: Exception) { null } ?: return@mapNotNull null
+                    MyRoleItem(
+                        taziehId = taziehId,
+                        taziehTitle = tazieh.title,
+                        roleId = roleId,
+                        roleTitle = role.title
+                    )
+                }
+            }
+            LaunchedEffect(Unit) { reloadMyRoles() }
+
+            MyRoleScreen(
+                items = items,
+                onRead = { item ->
+                    navController.navigate("sections/${item.roleId}/${item.roleTitle}")
+                },
+                onRehearse = { item ->
+                    navController.navigate("rehearsal/${item.roleId}/${item.roleTitle}")
+                },
+                onExportPdf = { item ->
+                    scope.launch {
+                        val sections = db.sectionDao().getByRole(item.roleId)
+                        com.example.bookapp.data.exportRoleToPdf(context, item.roleTitle, sections)
+                    }
+                },
+                onRemove = { item ->
+                    Prefs.clearMyRole(context, item.taziehId)
+                    scope.launch { reloadMyRoles() }
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(ROUTE_REHEARSAL) { backStackEntry ->
+            val roleId = backStackEntry.arguments?.getString("roleId")?.toLongOrNull() ?: 0L
+            val roleTitle = backStackEntry.arguments?.getString("roleTitle") ?: ""
+            var sections by remember { mutableStateOf(listOf<SectionEntity>()) }
+            LaunchedEffect(roleId) {
+                sections = db.sectionDao().getByRole(roleId)
+            }
+            RehearsalScreen(
+                roleTitle = roleTitle,
+                sections = sections,
                 onBack = { navController.popBackStack() }
             )
         }
@@ -259,45 +322,77 @@ fun AppNavigation(
             val taziehTitle = backStackEntry.arguments?.getString("taziehTitle") ?: ""
             var items by remember { mutableStateOf(listOf<ListItemData>()) }
             var compareMode by remember { mutableStateOf(false) }
+            var selectMyRoleMode by remember { mutableStateOf(false) }
             var selectedIds by remember { mutableStateOf(setOf<Long>()) }
+            var myRoleId by remember { mutableStateOf<Long?>(null) }
+            val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+            val scope = androidx.compose.runtime.rememberCoroutineScope()
+
             LaunchedEffect(taziehId) {
                 items = db.roleDao().getByTazieh(taziehId).map { ListItemData(it.id, it.title) }
+                myRoleId = Prefs.getMyRole(context, taziehId)
             }
+
             GenericListScreen(
-                screenTitle = if (compareMode) "دو نقش را انتخاب کنید" else taziehTitle,
+                screenTitle = when {
+                    compareMode -> "دو نقش را انتخاب کنید"
+                    selectMyRoleMode -> "نقش خودتان را انتخاب کنید"
+                    else -> taziehTitle
+                },
                 items = items,
                 onItemClick = { navController.navigate("sections/${it.id}/${it.title}") },
                 onBack = {
-                    if (compareMode) {
-                        compareMode = false
-                        selectedIds = emptySet()
-                    } else {
-                        navController.popBackStack()
+                    when {
+                        compareMode -> { compareMode = false; selectedIds = emptySet() }
+                        selectMyRoleMode -> selectMyRoleMode = false
+                        else -> navController.popBackStack()
                     }
                 },
-                selectedIds = selectedIds,
-                onToggleSelect = if (compareMode) { item ->
-                    selectedIds = if (item.id in selectedIds) {
-                        selectedIds - item.id
-                    } else if (selectedIds.size < 2) {
-                        selectedIds + item.id
-                    } else {
-                        selectedIds
+                selectedIds = when {
+                    compareMode -> selectedIds
+                    myRoleId != null -> setOf(myRoleId!!)
+                    else -> emptySet()
+                },
+                onToggleSelect = when {
+                    compareMode -> { item: ListItemData ->
+                        selectedIds = if (item.id in selectedIds) {
+                            selectedIds - item.id
+                        } else if (selectedIds.size < 2) {
+                            selectedIds + item.id
+                        } else {
+                            selectedIds
+                        }
+                        if (selectedIds.size == 2) {
+                            val (a, b) = selectedIds.toList()
+                            compareMode = false
+                            navController.navigate("compare/$a/$b")
+                        }
                     }
-                    if (selectedIds.size == 2) {
-                        val (a, b) = selectedIds.toList()
-                        compareMode = false
-                        navController.navigate("compare/$a/$b")
+                    selectMyRoleMode -> { item: ListItemData ->
+                        Prefs.setMyRole(context, taziehId, item.id)
+                        myRoleId = item.id
+                        selectMyRoleMode = false
+                        scope.launch { snackbarHostState.showSnackbar("«${item.title}» به‌عنوان نقش شما ثبت شد") }
                     }
-                } else null,
+                    else -> null
+                },
                 topBarAction = {
                     androidx.compose.material3.TextButton(onClick = {
+                        selectMyRoleMode = !selectMyRoleMode
+                        compareMode = false
+                        selectedIds = emptySet()
+                    }) {
+                        androidx.compose.material3.Text(if (selectMyRoleMode) "لغو" else "نقش من")
+                    }
+                    androidx.compose.material3.TextButton(onClick = {
                         compareMode = !compareMode
+                        selectMyRoleMode = false
                         selectedIds = emptySet()
                     }) {
                         androidx.compose.material3.Text(if (compareMode) "لغو" else "مقایسه")
                     }
-                }
+                },
+                snackbarHostState = snackbarHostState
             )
         }
 
@@ -340,16 +435,24 @@ fun AppNavigation(
                 },
                 onBack = { navController.popBackStack() },
                 floatingAction = {
-                    androidx.compose.material3.ExtendedFloatingActionButton(
-                        text = { androidx.compose.material3.Text("خروجی PDF") },
-                        icon = { androidx.compose.material3.Icon(Icons.Filled.Share, contentDescription = null) },
-                        onClick = {
-                            scope.launch {
-                                val fullSections = db.sectionDao().getByRole(roleId)
-                                com.example.bookapp.data.exportRoleToPdf(context, roleTitle, fullSections)
+                    Column(horizontalAlignment = androidx.compose.ui.Alignment.End) {
+                        androidx.compose.material3.ExtendedFloatingActionButton(
+                            text = { androidx.compose.material3.Text("حالت تمرین") },
+                            icon = { androidx.compose.material3.Icon(Icons.Filled.School, contentDescription = null) },
+                            onClick = { navController.navigate("rehearsal/$roleId/$roleTitle") }
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        androidx.compose.material3.ExtendedFloatingActionButton(
+                            text = { androidx.compose.material3.Text("خروجی PDF") },
+                            icon = { androidx.compose.material3.Icon(Icons.Filled.Share, contentDescription = null) },
+                            onClick = {
+                                scope.launch {
+                                    val fullSections = db.sectionDao().getByRole(roleId)
+                                    com.example.bookapp.data.exportRoleToPdf(context, roleTitle, fullSections)
+                                }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             )
         }
