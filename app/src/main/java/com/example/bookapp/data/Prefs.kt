@@ -164,4 +164,36 @@ object Prefs {
             prefs.edit().putString("$KEY_TAG_PREFIX$sectionId", tag.trim()).apply()
         }
     }
+
+    private const val KEY_MY_ROLE_PREFIX = "my_role_"
+
+    /** شناسه نقشی که کاربر به‌عنوان «نقش من» برای یک تعزیه انتخاب کرده، یا null */
+    fun getMyRole(context: Context, taziehId: Long): Long? {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val value = prefs.getLong("$KEY_MY_ROLE_PREFIX$taziehId", -1L)
+        return if (value == -1L) null else value
+    }
+
+    fun setMyRole(context: Context, taziehId: Long, roleId: Long) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putLong("$KEY_MY_ROLE_PREFIX$taziehId", roleId).apply()
+    }
+
+    fun clearMyRole(context: Context, taziehId: Long) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().remove("$KEY_MY_ROLE_PREFIX$taziehId").apply()
+    }
+
+    /** همه‌ی نقش‌های «من» ثبت‌شده روی این گوشی: نگاشت شناسه‌تعزیه به شناسه‌نقش */
+    fun getAllMyRoles(context: Context): Map<Long, Long> {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.all
+            .filterKeys { it.startsWith(KEY_MY_ROLE_PREFIX) }
+            .mapNotNull { (key, value) ->
+                val taziehId = key.removePrefix(KEY_MY_ROLE_PREFIX).toLongOrNull()
+                val roleId = value as? Long
+                if (taziehId != null && roleId != null) taziehId to roleId else null
+            }
+            .toMap()
+    }
 }
