@@ -13,6 +13,8 @@ data class SearchResult(
 
 @Dao
 interface SearchDao {
+    // جستجوی سریع با FTS (به‌جای LIKE) روی عنوان/متن بخش‌ها، به‌علاوه‌ی جستجوی
+    // ساده روی عنوان نقش/تعزیه (جدول‌های کوچک، LIKE برایشان مشکلی ایجاد نمی‌کند)
     @Query(
         """
         SELECT
@@ -25,15 +27,14 @@ interface SearchDao {
         INNER JOIN roles ON sections.roleId = roles.id
         INNER JOIN taziehs ON roles.taziehId = taziehs.id
         INNER JOIN fields ON taziehs.fieldId = fields.id
-        WHERE sections.title LIKE '%' || :query || '%'
-           OR sections.content LIKE '%' || :query || '%'
-           OR roles.title LIKE '%' || :query || '%'
-           OR taziehs.title LIKE '%' || :query || '%'
+        WHERE sections.id IN (SELECT rowid FROM sections_fts WHERE sections_fts MATCH :ftsQuery)
+           OR roles.title LIKE '%' || :rawQuery || '%'
+           OR taziehs.title LIKE '%' || :rawQuery || '%'
         ORDER BY fields.title, taziehs.title, roles.title
         LIMIT 100
         """
     )
-    suspend fun search(query: String): List<SearchResult>
+    suspend fun searchFtsAll(ftsQuery: String, rawQuery: String): List<SearchResult>
 
     @Query(
         """
@@ -48,15 +49,16 @@ interface SearchDao {
         INNER JOIN taziehs ON roles.taziehId = taziehs.id
         INNER JOIN fields ON taziehs.fieldId = fields.id
         WHERE fields.id = :fieldId
-          AND (sections.title LIKE '%' || :query || '%'
-           OR sections.content LIKE '%' || :query || '%'
-           OR roles.title LIKE '%' || :query || '%'
-           OR taziehs.title LIKE '%' || :query || '%')
+          AND (
+            sections.id IN (SELECT rowid FROM sections_fts WHERE sections_fts MATCH :ftsQuery)
+            OR roles.title LIKE '%' || :rawQuery || '%'
+            OR taziehs.title LIKE '%' || :rawQuery || '%'
+          )
         ORDER BY taziehs.title, roles.title
         LIMIT 100
         """
     )
-    suspend fun searchInField(query: String, fieldId: Long): List<SearchResult>
+    suspend fun searchFtsInField(ftsQuery: String, rawQuery: String, fieldId: Long): List<SearchResult>
 
     @Query(
         """
@@ -71,14 +73,15 @@ interface SearchDao {
         INNER JOIN taziehs ON roles.taziehId = taziehs.id
         INNER JOIN fields ON taziehs.fieldId = fields.id
         WHERE taziehs.id = :taziehId
-          AND (sections.title LIKE '%' || :query || '%'
-           OR sections.content LIKE '%' || :query || '%'
-           OR roles.title LIKE '%' || :query || '%')
+          AND (
+            sections.id IN (SELECT rowid FROM sections_fts WHERE sections_fts MATCH :ftsQuery)
+            OR roles.title LIKE '%' || :rawQuery || '%'
+          )
         ORDER BY roles.title
         LIMIT 100
         """
     )
-    suspend fun searchInTazieh(query: String, taziehId: Long): List<SearchResult>
+    suspend fun searchFtsInTazieh(ftsQuery: String, rawQuery: String, taziehId: Long): List<SearchResult>
 
     @Query(
         """
@@ -145,4 +148,35 @@ interface SearchDao {
         """
     )
     suspend fun getRelatedByTitle(sectionTitle: String, excludeSectionId: Long): List<SearchResult>
+}
+
+/**
+ * از روی متن آزاد کاربر یک عبارت جستجوی FTS (با prefix-match روی هر کلمه) می‌سازد.
+ * مثلاً «شمر شهاد» -> «شمر* شهاد*». کاراکترهای خاص FTS حذف می‌شوند تا خطای سینتکس ندهد.
+ */
+private fun buildFtsQuery(raw: String): String {
+    return raw.trim()
+        .split(Regex("\\s+"))
+        .map { it.replace(Regex("[\"*^]"), "").trim() }
+        .filter { it.isNotEmpty() }
+        .joinToString(" ") { "$it*" }
+}
+
+/** جستجو در کل مجموعه؛ اگر query خالی باشد، جای اجرای کوئری FTS (که با ورودی خالی خطا می‌دهد) لیست خالی برمی‌گرداند. */
+suspend fun SearchDao.search(query: String): List<SearchResult> {
+    val fts = buildFtsQuery(query)
+    if (fts.isBlank()) return emptyList()
+    return searchFtsAll(fts, query)
+}
+
+suspend fun SearchDao.searchInField(query: String, fieldId: Long): List<SearchResult> {
+    val fts = buildFtsQuery(query)
+    if (fts.isBlank()) return emptyList()
+    return searchFtsInField(fts, query, fieldId)
+}
+
+suspend fun SearchDao.searchInTazieh(query: String, taziehId: Long): List<SearchResult> {
+    val fts = buildFtsQuery(query)
+    if (fts.isBlank()) return emptyList()
+    return searchFtsInTazieh(fts, query, taziehId)
 }

@@ -1,5 +1,10 @@
 package com.example.bookapp.ui
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -46,6 +51,7 @@ private const val ROUTE_FIELDS = "fields"
 private const val ROUTE_TAZIEHS = "taziehs/{fieldId}/{fieldTitle}"
 private const val ROUTE_ROLES = "roles/{taziehId}/{taziehTitle}"
 private const val ROUTE_SECTIONS = "sections/{roleId}/{roleTitle}"
+private const val ROUTE_TAZIEH_INDEX = "tazieh_index/{taziehId}/{taziehTitle}"
 private const val ROUTE_TEXT = "text/{sectionId}"
 private const val ROUTE_TEXT_PAGER = "text_pager/{roleId}/{startIndex}"
 private const val ROUTE_COMPARE = "compare/{roleAId}/{roleBId}"
@@ -78,7 +84,24 @@ fun AppNavigation(
         else -> ROUTE_MAIN_MENU
     }
 
-    NavHost(navController = navController, startDestination = ROUTE_SPLASH) {
+    // انیمیشن سریع و سبک بین صفحات (نه کند/سنگین)، تا هم نرم باشد و هم سرعت استفاده از برنامه افت نکند
+    val navAnimDuration = 220
+    NavHost(
+        navController = navController,
+        startDestination = ROUTE_SPLASH,
+        enterTransition = {
+            fadeIn(tween(navAnimDuration)) + slideInHorizontally(tween(navAnimDuration)) { it / 6 }
+        },
+        exitTransition = {
+            fadeOut(tween(navAnimDuration)) + slideOutHorizontally(tween(navAnimDuration)) { -it / 6 }
+        },
+        popEnterTransition = {
+            fadeIn(tween(navAnimDuration)) + slideInHorizontally(tween(navAnimDuration)) { -it / 6 }
+        },
+        popExitTransition = {
+            fadeOut(tween(navAnimDuration)) + slideOutHorizontally(tween(navAnimDuration)) { it / 6 }
+        }
+    ) {
 
         composable(ROUTE_SPLASH) {
             SplashScreen(onFinished = {
@@ -379,6 +402,11 @@ fun AppNavigation(
                 },
                 topBarAction = {
                     androidx.compose.material3.TextButton(onClick = {
+                        navController.navigate("tazieh_index/$taziehId/$taziehTitle")
+                    }) {
+                        androidx.compose.material3.Text("فهرست")
+                    }
+                    androidx.compose.material3.TextButton(onClick = {
                         selectMyRoleMode = !selectMyRoleMode
                         compareMode = false
                         selectedIds = emptySet()
@@ -394,6 +422,41 @@ fun AppNavigation(
                     }
                 },
                 snackbarHostState = snackbarHostState
+            )
+        }
+
+        composable(ROUTE_TAZIEH_INDEX) { backStackEntry ->
+            val taziehId = backStackEntry.arguments?.getString("taziehId")?.toLongOrNull() ?: 0L
+            val taziehTitle = backStackEntry.arguments?.getString("taziehTitle") ?: ""
+            var indexItems by remember { mutableStateOf(listOf<TaziehIndexItem>()) }
+            val scope = androidx.compose.runtime.rememberCoroutineScope()
+
+            LaunchedEffect(taziehId) {
+                val roles = db.roleDao().getByTazieh(taziehId)
+                indexItems = roles.map { role ->
+                    val firstSection = db.sectionDao().getByRole(role.id).firstOrNull()
+                    val firstVerse = firstSection?.content
+                        ?.lineSequence()
+                        ?.firstOrNull { it.isNotBlank() }
+                        ?.trim() ?: ""
+                    TaziehIndexItem(roleId = role.id, roleTitle = role.title, firstVerse = firstVerse)
+                }
+            }
+
+            TaziehIndexScreen(
+                taziehTitle = taziehTitle,
+                items = indexItems,
+                onItemClick = { item -> navController.navigate("text_pager/${item.roleId}/0") },
+                onExportPdf = {
+                    scope.launch {
+                        val roles = db.roleDao().getByTazieh(taziehId)
+                        val rolesWithSections = roles.map { role ->
+                            role.title to db.sectionDao().getByRole(role.id)
+                        }
+                        com.example.bookapp.data.exportTaziehToPdf(context, taziehTitle, rolesWithSections)
+                    }
+                },
+                onBack = { navController.popBackStack() }
             )
         }
 
@@ -490,11 +553,13 @@ fun AppNavigation(
             var content by remember { mutableStateOf("") }
             var bookmarked by remember { mutableStateOf(Prefs.isBookmarked(context, sectionId)) }
             var relatedSections by remember { mutableStateOf(listOf<com.example.bookapp.data.SearchResult>()) }
+            var sectionAudioUrl by remember { mutableStateOf<String?>(null) }
             LaunchedEffect(sectionId) {
                 val section = db.sectionDao().getById(sectionId)
                 title = section.title
                 content = section.content
                 bookmarked = Prefs.isBookmarked(context, sectionId)
+                sectionAudioUrl = section.audioUrl
                 Prefs.addRecent(context, sectionId)
                 Prefs.markSectionRead(context, sectionId)
                 relatedSections = db.searchDao().getRelatedByTitle(section.title, sectionId)
@@ -507,6 +572,7 @@ fun AppNavigation(
                     bookmarked = Prefs.toggleBookmark(context, sectionId)
                 },
                 sectionId = sectionId,
+                audioUrl = sectionAudioUrl,
                 relatedSections = relatedSections,
                 onRelatedClick = { related -> navController.navigate("text/${related.sectionId}") },
                 onBack = { navController.popBackStack() }

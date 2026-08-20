@@ -24,6 +24,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.bookapp.data.AudioPlayerHelper
 import com.example.bookapp.data.Prefs
 import com.example.bookapp.data.SearchResult
 import com.example.bookapp.data.SpeechHelper
@@ -36,6 +37,7 @@ fun TextScreen(
     isBookmarked: Boolean,
     onToggleBookmark: () -> Unit,
     sectionId: Long? = null,
+    audioUrl: String? = null,
     relatedSections: List<SearchResult> = emptyList(),
     onRelatedClick: (SearchResult) -> Unit = {},
     onBack: () -> Unit
@@ -55,6 +57,14 @@ fun TextScreen(
             if (status == "done" || status == "error") isSpeaking = false
         }
     }
+    val audioPlayerHelper = remember {
+        AudioPlayerHelper(context) { status ->
+            when (status) {
+                "error" -> statusMessage = "خطا در پخش فایل صوتی"
+                "done" -> isSpeaking = false
+            }
+        }
+    }
 
     LaunchedEffect(statusMessage) {
         statusMessage?.let {
@@ -70,7 +80,10 @@ fun TextScreen(
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     DisposableEffect(Unit) {
-        onDispose { speechHelper.shutdown() }
+        onDispose {
+            speechHelper.shutdown()
+            audioPlayerHelper.stop()
+        }
     }
 
     Scaffold(
@@ -89,15 +102,20 @@ fun TextScreen(
                     IconButton(onClick = {
                         if (isSpeaking) {
                             speechHelper.stop()
+                            audioPlayerHelper.stop()
                             isSpeaking = false
                         } else {
-                            speechHelper.speak(content)
+                            if (!audioUrl.isNullOrBlank()) {
+                                audioPlayerHelper.play(audioUrl)
+                            } else {
+                                speechHelper.speak(content)
+                            }
                             isSpeaking = true
                         }
                     }) {
                         Icon(
                             if (isSpeaking) Icons.Filled.Stop else Icons.Filled.PlayArrow,
-                            contentDescription = if (isSpeaking) "توقف خواندن" else "خواندن صوتی"
+                            contentDescription = if (isSpeaking) "توقف خواندن" else if (!audioUrl.isNullOrBlank()) "پخش صدای واقعی" else "خواندن صوتی"
                         )
                     }
                     if (sectionId != null) {
@@ -244,6 +262,7 @@ fun TextPagerScreen(
                 isBookmarked = isBookmarked(section.id),
                 onToggleBookmark = { onToggleBookmark(section.id) },
                 sectionId = section.id,
+                audioUrl = section.audioUrl,
                 onBack = onBack
             )
         }

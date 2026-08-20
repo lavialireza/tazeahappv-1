@@ -4,6 +4,15 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+// اطلاعات امضای Release را از local.properties یا متغیرهای محیطی می‌خواند.
+// این فایل هرگز نباید حاوی کلید واقعی باشد و local.properties هم در .gitignore است.
+val localProps = java.util.Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+fun signingProp(key: String): String? =
+    (localProps.getProperty(key) ?: System.getenv(key))?.takeIf { it.isNotBlank() }
+
 android {
     namespace = "com.example.bookapp"
     compileSdk = 34
@@ -16,9 +25,30 @@ android {
         versionName = "1.0"
     }
 
+    val storeFilePath = signingProp("RELEASE_STORE_FILE")
+    val hasReleaseSigning = storeFilePath != null
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(storeFilePath!!)
+                storePassword = signingProp("RELEASE_STORE_PASSWORD")
+                keyAlias = signingProp("RELEASE_KEY_ALIAS")
+                keyPassword = signingProp("RELEASE_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            // اگر کلید امضا تنظیم نشده باشد (مثلاً روی CI بدون secret)، بدون امضا
+            // ساخته می‌شود تا Build نشکند؛ چنین APK ای فقط برای تست داخلی قابل‌نصب است،
+            // نه انتشار در فروشگاه. برای انتشار واقعی، local.properties را طبق
+            // DEVELOPER_GUIDE.md پر کنید.
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
@@ -35,6 +65,12 @@ android {
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"
+    }
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            isReturnDefaultValues = true
+        }
     }
 }
 
@@ -58,4 +94,11 @@ dependencies {
     ksp("androidx.room:room-compiler:2.6.1")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
+
+    // تست‌های واحد (اجرا روی JVM با Robolectric، بدون نیاز به شبیه‌ساز/گوشی)
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.11.1")
+    testImplementation("androidx.test:core:1.5.0")
+    testImplementation("androidx.room:room-testing:2.6.1")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
 }

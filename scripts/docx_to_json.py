@@ -89,6 +89,24 @@ def convert(docx_path: str) -> list:
     return fields
 
 
+def next_content_filename(content_dir: str, input_path: str) -> str:
+    """نام فایل بعدی و شماره‌دار (مثل 002_my-file.json) را در پوشه‌ی content تعیین می‌کند،
+    بدون اینکه فایلی بسازد؛ فقط مسیر کامل خروجی را برمی‌گرداند."""
+    os.makedirs(content_dir, exist_ok=True)
+
+    existing = [f for f in os.listdir(content_dir) if re.match(r"^\d{3}_.*\.json$", f)]
+    next_num = 1
+    for f in existing:
+        n = int(f[:3])
+        if n >= next_num:
+            next_num = n + 1
+
+    base_name = os.path.splitext(os.path.basename(input_path))[0]
+    slug = re.sub(r"[^\w\-]+", "-", base_name).strip("-") or "majles"
+    output_name = f"{next_num:03d}_{slug}.json"
+    return os.path.join(content_dir, output_name)
+
+
 if __name__ == "__main__":
     if len(sys.argv) not in (2, 3):
         print("استفاده:")
@@ -107,22 +125,10 @@ if __name__ == "__main__":
         print(f"تمام شد. فایل خروجی: {output_path}")
     else:
         # روش جدید: ساخت خودکار یک فایل تازه و شماره‌دار در پوشه‌ی content
-        os.makedirs(DEFAULT_CONTENT_DIR, exist_ok=True)
-
-        existing = [f for f in os.listdir(DEFAULT_CONTENT_DIR) if re.match(r"^\d{3}_.*\.json$", f)]
-        next_num = 1
-        for f in existing:
-            n = int(f[:3])
-            if n >= next_num:
-                next_num = n + 1
-
-        base_name = os.path.splitext(os.path.basename(input_path))[0]
-        slug = re.sub(r"[^\w\-]+", "-", base_name).strip("-") or "majles"
-        output_name = f"{next_num:03d}_{slug}.json"
-        output_path = os.path.join(DEFAULT_CONTENT_DIR, output_name)
+        output_path = next_content_filename(DEFAULT_CONTENT_DIR, input_path)
 
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(result, f, ensure_ascii=False, indent=2)
 
-        print(f"تمام شد. فایل جدید ساخته شد: app/src/main/assets/content/{output_name}")
+        print(f"تمام شد. فایل جدید ساخته شد: app/src/main/assets/content/{os.path.basename(output_path)}")
         print("این فایل را commit/push کنید؛ همین یک فایل به‌عنوان محتوای تازه اضافه می‌شود.")

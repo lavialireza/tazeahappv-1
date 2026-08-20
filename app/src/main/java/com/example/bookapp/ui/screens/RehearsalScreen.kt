@@ -1,5 +1,9 @@
 package com.example.bookapp.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -86,9 +90,22 @@ fun RehearsalScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     } else {
-                        lines.take(revealedLines).forEach { line ->
-                            Text(line, style = MaterialTheme.typography.bodyLarge)
-                            Spacer(Modifier.height(6.dp))
+                        lines.take(revealedLines).forEachIndexed { index, line ->
+                            // آخرین خط تازه‌آشکارشده با انیمیشن نرم (فید + باز شدن) ظاهر می‌شود
+                            val isLatest = index == revealedLines - 1
+                            AnimatedVisibility(
+                                visible = true,
+                                enter = if (isLatest) {
+                                    fadeIn(tween(450)) + expandVertically(tween(450))
+                                } else {
+                                    fadeIn(tween(0))
+                                }
+                            ) {
+                                Column {
+                                    Text(line, style = MaterialTheme.typography.bodyLarge)
+                                    Spacer(Modifier.height(6.dp))
+                                }
+                            }
                         }
                     }
                 }

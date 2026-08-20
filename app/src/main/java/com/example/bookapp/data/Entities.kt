@@ -62,5 +62,9 @@ data class SectionEntity(
     val roleId: Long,
     val orderIndex: Int,
     val title: String,
-    val content: String // متن اشعار همان بخش
+    val content: String, // متن اشعار همان بخش
+    // آدرس فایل صوتی واقعی (ضبط‌شده) برای این بخش، در صورت وجود؛
+    // می‌تواند یک URL کامل باشد یا مسیر نسبی داخل assets/audio (مثلاً "audio/karbala_shahadat.mp3").
+    // اگر خالی/نال باشد، پخش با صدای مصنوعی (TTS) انجام می‌شود.
+    val audioUrl: String? = null
 )

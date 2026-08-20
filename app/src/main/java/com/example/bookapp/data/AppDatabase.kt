@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.withTransaction
+import androidx.sqlite.db.SupportSQLiteDatabase
 import org.json.JSONArray
 import java.net.HttpURLConnection
 import java.net.URL
@@ -15,9 +16,10 @@ import java.net.URL
         TaziehEntity::class,
         RoleEntity::class,
         SectionEntity::class,
-        NoteEntity::class
+        NoteEntity::class,
+        SectionFts::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -38,13 +40,46 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "bookapp.db"
                 )
-                    // چون بین نسخه ۱ و ۲ فقط جدول یادداشت‌ها اضافه شده،
-                    // در صورت نبود Migration رسمی، دیتابیس محتوا از نو ساخته می‌شود
+                    // چون بین نسخه‌ها Migration رسمی نداریم، دیتابیس محتوا از نو ساخته می‌شود
                     // (بارگذاری اولیه دوباره از فایل‌های assets/content انجام می‌شود)
                     .fallbackToDestructiveMigration()
+                    .addCallback(ftsSyncTriggersCallback)
                     .build()
                 INSTANCE = instance
                 instance
+            }
+        }
+
+        /**
+         * جدول sections_fts یک "external content table" است؛ Room خودش تریگر
+         * همگام‌سازی نمی‌سازد، پس با این Callback بعد از ساخت دیتابیس (فقط یک‌بار،
+         * موقع onCreate) تریگرهای INSERT/UPDATE/DELETE لازم را دستی می‌سازیم.
+         */
+        private val ftsSyncTriggersCallback = object : RoomDatabase.Callback() {
+            override fun onCreate(db: SupportSQLiteDatabase) {
+                super.onCreate(db)
+                db.execSQL(
+                    """
+                    CREATE TRIGGER IF NOT EXISTS sections_fts_ai AFTER INSERT ON sections BEGIN
+                        INSERT INTO sections_fts(rowid, title, content) VALUES (new.id, new.title, new.content);
+                    END;
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TRIGGER IF NOT EXISTS sections_fts_ad AFTER DELETE ON sections BEGIN
+                        DELETE FROM sections_fts WHERE rowid = old.id;
+                    END;
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TRIGGER IF NOT EXISTS sections_fts_au AFTER UPDATE ON sections BEGIN
+                        DELETE FROM sections_fts WHERE rowid = old.id;
+                        INSERT INTO sections_fts(rowid, title, content) VALUES (new.id, new.title, new.content);
+                    END;
+                    """.trimIndent()
+                )
             }
         }
     }
@@ -110,7 +145,7 @@ private fun withHttpGet(urlString: String): String {
     }
 }
 
-private suspend fun mergeContentFromJson(db: AppDatabase, jsonText: String) {
+internal suspend fun mergeContentFromJson(db: AppDatabase, jsonText: String) {
     val fields = JSONArray(jsonText)
     db.withTransaction {
         for (fi in 0 until fields.length()) {
@@ -142,7 +177,8 @@ private suspend fun mergeContentFromJson(db: AppDatabase, jsonText: String) {
                                 roleId = roleId,
                                 orderIndex = nextOrderIndex,
                                 title = secObj.getString("title"),
-                                content = secObj.getString("content")
+                                content = secObj.getString("content"),
+                                audioUrl = secObj.optString("audio", "").ifBlank { null }
                             )
                         )
                         nextOrderIndex++
