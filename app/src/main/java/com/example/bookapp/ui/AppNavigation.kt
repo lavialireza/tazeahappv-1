@@ -30,6 +30,9 @@ import com.example.bookapp.data.NoteEntity
 import com.example.bookapp.data.Prefs
 import com.example.bookapp.data.SearchResult
 import com.example.bookapp.data.SectionEntity
+import com.example.bookapp.data.search
+import com.example.bookapp.data.searchInField
+import com.example.bookapp.data.searchInTazieh
 import com.example.bookapp.data.syncLocalContentFiles
 import com.example.bookapp.data.syncRemoteContent
 import com.example.bookapp.ui.screens.*
