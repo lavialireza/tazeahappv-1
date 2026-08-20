@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -6,9 +8,12 @@ plugins {
 
 // اطلاعات امضای Release را از local.properties یا متغیرهای محیطی می‌خواند.
 // این فایل هرگز نباید حاوی کلید واقعی باشد و local.properties هم در .gitignore است.
-val localProps = java.util.Properties().apply {
+val localProps = Properties()
+run {
     val f = rootProject.file("local.properties")
-    if (f.exists()) f.inputStream().use { load(it) }
+    if (f.exists()) {
+        f.inputStream().use { stream -> localProps.load(stream) }
+    }
 }
 fun signingProp(key: String): String? =
     (localProps.getProperty(key) ?: System.getenv(key))?.takeIf { it.isNotBlank() }
