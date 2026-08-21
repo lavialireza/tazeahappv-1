@@ -49,6 +49,29 @@ data class RoleEntity(
     val orderIndex: Int = 0
 )
 
+// سطح ۴: بخش‌ها (ورود، ساقی‌نامه، شهادت و ...) - متعلق به یک نقش، شامل متن اشعار
+@Entity(
+    tableName = "sections",
+    foreignKeys = [ForeignKey(
+        entity = RoleEntity::class,
+        parentColumns = ["id"],
+        childColumns = ["roleId"],
+        onDelete = ForeignKey.CASCADE
+    )],
+    indices = [Index("roleId")]
+)
+data class SectionEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val roleId: Long,
+    val orderIndex: Int,
+    val title: String,
+    val content: String, // متن اشعار همان بخش
+    // آدرس فایل صوتی واقعی (ضبط‌شده) برای این بخش، در صورت وجود؛
+    // می‌تواند یک URL کامل باشد یا مسیر نسبی داخل assets/audio (مثلاً "audio/karbala_shahadat.mp3").
+    // اگر خالی/نال باشد، پخش با صدای مصنوعی (TTS) انجام می‌شود.
+    val audioUrl: String? = null
+)
+
 // پاورقی: توضیح یک واژه/عبارت خاص در یک بخش (معنی لغت، توضیح مختصر، منبع و ...)
 // کاربر خودش این‌ها را از داخل برنامه اضافه/ویرایش/حذف می‌کند.
 @Entity(
@@ -87,83 +110,6 @@ data class DialogueEntity(
     val title: String
 )
 
-@Entity(
-    tableName = "dialogue_turns",
-    foreignKeys = [
-        ForeignKey(
-            entity = DialogueEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["dialogueId"],
-            onDelete = ForeignKey.CASCADE
-        ),
-        ForeignKey(
-            entity = SectionEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["sectionId"],
-            onDelete = ForeignKey.CASCADE
-        )
-    ],
-    indices = [Index("dialogueId"), Index("sectionId")]
-)
-data class DialogueTurnEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val dialogueId: Long,
-    val sectionId: Long,
-    val orderIndex: Int
-)
-
-// گفتگو (مثلاً مکالمه علی‌اکبر و امام حسین): فقط به بخش‌های موجود لینک می‌دهد،
-// متن را کپی نمی‌کند - اگر متن اصلی بعداً ویرایش شود، گفتگو هم خودکار به‌روز می‌ماند.
-@Entity(
-    tableName = "dialogues",
-    foreignKeys = [ForeignKey(
-        entity = TaziehEntity::class,
-        parentColumns = ["id"],
-        childColumns = ["taziehId"],
-        onDelete = ForeignKey.CASCADE
-    )],
-    indices = [Index("taziehId")]
-)
-data class DialogueEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val taziehId: Long,
-    val title: String
-)
-
-// هر نوبت از یک گفتگو: اشاره به یک بخش موجود + ترتیبش در گفتگو
-@Entity(
-    tableName = "dialogue_turns",
-    foreignKeys = [
-        ForeignKey(entity = DialogueEntity::class, parentColumns = ["id"], childColumns = ["dialogueId"], onDelete = ForeignKey.CASCADE),
-        ForeignKey(entity = SectionEntity::class, parentColumns = ["id"], childColumns = ["sectionId"], onDelete = ForeignKey.CASCADE)
-    ],
-    indices = [Index("dialogueId"), Index("sectionId")]
-)
-data class DialogueTurnEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val dialogueId: Long,
-    val sectionId: Long,
-    val orderIndex: Int
-)
-
-// گفتگو: مجموعه‌ای از بخش‌های موجود که کاربر به ترتیب به هم وصل می‌کند
-// (مثلاً مکالمه‌ی شمر و عباس)؛ فقط لینک است، متن اصلی کپی نمی‌شود.
-@Entity(
-    tableName = "dialogues",
-    foreignKeys = [ForeignKey(
-        entity = TaziehEntity::class,
-        parentColumns = ["id"],
-        childColumns = ["taziehId"],
-        onDelete = ForeignKey.CASCADE
-    )],
-    indices = [Index("taziehId")]
-)
-data class DialogueEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val taziehId: Long,
-    val title: String
-)
-
 // هر نوبت از یک گفتگو: اشاره به یک بخش موجود + ترتیبش در گفتگو
 @Entity(
     tableName = "dialogue_turns",
@@ -187,28 +133,5 @@ data class DialogueTurnEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val dialogueId: Long,
     val sectionId: Long,
-    val turnOrder: Int
-)
-
-// سطح ۴: بخش‌ها (ورود، ساقی‌نامه، شهادت و ...) - متعلق به یک نقش، شامل متن اشعار
-@Entity(
-    tableName = "sections",
-    foreignKeys = [ForeignKey(
-        entity = RoleEntity::class,
-        parentColumns = ["id"],
-        childColumns = ["roleId"],
-        onDelete = ForeignKey.CASCADE
-    )],
-    indices = [Index("roleId")]
-)
-data class SectionEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val roleId: Long,
-    val orderIndex: Int,
-    val title: String,
-    val content: String, // متن اشعار همان بخش
-    // آدرس فایل صوتی واقعی (ضبط‌شده) برای این بخش، در صورت وجود؛
-    // می‌تواند یک URL کامل باشد یا مسیر نسبی داخل assets/audio (مثلاً "audio/karbala_shahadat.mp3").
-    // اگر خالی/نال باشد، پخش با صدای مصنوعی (TTS) انجام می‌شود.
-    val audioUrl: String? = null
+    val orderIndex: Int
 )
