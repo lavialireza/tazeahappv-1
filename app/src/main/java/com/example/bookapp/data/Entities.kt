@@ -43,7 +43,10 @@ data class TaziehEntity(
 data class RoleEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val taziehId: Long,
-    val title: String
+    val title: String,
+    // ترتیب نمایش نقش در فهرست/نمایش‌نامه؛ پیش‌فرض بر اساس ترتیب ورود از متن اصلی
+    // (همان ترتیبی که در فایل Word/JSON آمده)، ولی از داخل برنامه هم قابل تغییر است.
+    val orderIndex: Int = 0
 )
 
 // سطح ۴: بخش‌ها (ورود، ساقی‌نامه، شهادت و ...) - متعلق به یک نقش، شامل متن اشعار

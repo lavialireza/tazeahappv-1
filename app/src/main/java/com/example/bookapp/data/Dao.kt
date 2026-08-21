@@ -42,7 +42,7 @@ interface TaziehDao {
 
 @Dao
 interface RoleDao {
-    @Query("SELECT * FROM roles WHERE taziehId = :taziehId ORDER BY id")
+    @Query("SELECT * FROM roles WHERE taziehId = :taziehId ORDER BY orderIndex, id")
     suspend fun getByTazieh(taziehId: Long): List<RoleEntity>
 
     @Query("SELECT * FROM roles WHERE id = :roleId")
@@ -51,8 +51,17 @@ interface RoleDao {
     @Query("SELECT * FROM roles WHERE taziehId = :taziehId AND title = :title LIMIT 1")
     suspend fun getByTitle(taziehId: Long, title: String): RoleEntity?
 
+    @Query("SELECT COALESCE(MAX(orderIndex), -1) FROM roles WHERE taziehId = :taziehId")
+    suspend fun getMaxOrderIndex(taziehId: Long): Int
+
     @Insert
     suspend fun insert(role: RoleEntity): Long
+
+    @Query("UPDATE roles SET title = :title WHERE id = :roleId")
+    suspend fun updateTitle(roleId: Long, title: String)
+
+    @Query("UPDATE roles SET orderIndex = :orderIndex WHERE id = :roleId")
+    suspend fun updateOrderIndex(roleId: Long, orderIndex: Int)
 
     @Query("DELETE FROM roles")
     suspend fun deleteAll()

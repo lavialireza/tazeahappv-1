@@ -19,7 +19,7 @@ import java.net.URL
         NoteEntity::class,
         SectionFts::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -166,7 +166,10 @@ internal suspend fun mergeContentFromJson(db: AppDatabase, jsonText: String) {
                     val roleObj = roles.getJSONObject(ri)
                     val roleTitle = roleObj.getString("title")
                     val roleId = db.roleDao().getByTitle(taziehId, roleTitle)?.id
-                        ?: db.roleDao().insert(RoleEntity(taziehId = taziehId, title = roleTitle))
+                        ?: run {
+                            val nextRoleOrder = db.roleDao().getMaxOrderIndex(taziehId) + 1
+                            db.roleDao().insert(RoleEntity(taziehId = taziehId, title = roleTitle, orderIndex = nextRoleOrder))
+                        }
 
                     var nextOrderIndex = db.sectionDao().getMaxOrderIndex(roleId) + 1
                     val sections = roleObj.getJSONArray("sections")

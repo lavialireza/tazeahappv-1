@@ -434,7 +434,7 @@ fun AppNavigation(
             var indexItems by remember { mutableStateOf(listOf<TaziehIndexItem>()) }
             val scope = androidx.compose.runtime.rememberCoroutineScope()
 
-            LaunchedEffect(taziehId) {
+            suspend fun reloadIndex() {
                 val roles = db.roleDao().getByTazieh(taziehId)
                 indexItems = roles.map { role ->
                     val firstSection = db.sectionDao().getByRole(role.id).firstOrNull()
@@ -445,6 +445,7 @@ fun AppNavigation(
                     TaziehIndexItem(roleId = role.id, roleTitle = role.title, firstVerse = firstVerse)
                 }
             }
+            LaunchedEffect(taziehId) { reloadIndex() }
 
             TaziehIndexScreen(
                 taziehTitle = taziehTitle,
@@ -457,6 +458,25 @@ fun AppNavigation(
                             role.title to db.sectionDao().getByRole(role.id)
                         }
                         com.example.bookapp.data.exportTaziehToPdf(context, taziehTitle, rolesWithSections)
+                    }
+                },
+                onRename = { item, newTitle ->
+                    scope.launch {
+                        db.roleDao().updateTitle(item.roleId, newTitle)
+                        reloadIndex()
+                    }
+                },
+                onMove = { index, direction ->
+                    scope.launch {
+                        val sorted = sortTaziehIndexItems(indexItems)
+                        val targetIndex = index + direction
+                        if (targetIndex in sorted.indices) {
+                            val roleA = db.roleDao().getById(sorted[index].roleId)
+                            val roleB = db.roleDao().getById(sorted[targetIndex].roleId)
+                            db.roleDao().updateOrderIndex(roleA.id, roleB.orderIndex)
+                            db.roleDao().updateOrderIndex(roleB.id, roleA.orderIndex)
+                            reloadIndex()
+                        }
                     }
                 },
                 onBack = { navController.popBackStack() }
