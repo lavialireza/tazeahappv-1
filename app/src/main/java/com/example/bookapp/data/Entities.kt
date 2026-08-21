@@ -68,6 +68,128 @@ data class FootnoteEntity(
     val explanation: String // متن توضیح (معنی، منبع، نکته و ...)
 )
 
+// گفتگو: مجموعه‌ای نام‌دار از نوبت‌های پشت‌سرهم که هرکدام فقط اشاره (لینک) به یک
+// بخش موجود است (بدون کپی متن) - برای مکالمه‌های چندنقشی مثل شمر و عباس، یا
+// امام حسین و علی‌اکبر، که هر نوبتش در «نقش» جداگانه‌ای در دیتابیس ذخیره شده است.
+@Entity(
+    tableName = "dialogues",
+    foreignKeys = [ForeignKey(
+        entity = TaziehEntity::class,
+        parentColumns = ["id"],
+        childColumns = ["taziehId"],
+        onDelete = ForeignKey.CASCADE
+    )],
+    indices = [Index("taziehId")]
+)
+data class DialogueEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val taziehId: Long,
+    val title: String
+)
+
+@Entity(
+    tableName = "dialogue_turns",
+    foreignKeys = [
+        ForeignKey(
+            entity = DialogueEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["dialogueId"],
+            onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = SectionEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["sectionId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index("dialogueId"), Index("sectionId")]
+)
+data class DialogueTurnEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val dialogueId: Long,
+    val sectionId: Long,
+    val orderIndex: Int
+)
+
+// گفتگو (مثلاً مکالمه علی‌اکبر و امام حسین): فقط به بخش‌های موجود لینک می‌دهد،
+// متن را کپی نمی‌کند - اگر متن اصلی بعداً ویرایش شود، گفتگو هم خودکار به‌روز می‌ماند.
+@Entity(
+    tableName = "dialogues",
+    foreignKeys = [ForeignKey(
+        entity = TaziehEntity::class,
+        parentColumns = ["id"],
+        childColumns = ["taziehId"],
+        onDelete = ForeignKey.CASCADE
+    )],
+    indices = [Index("taziehId")]
+)
+data class DialogueEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val taziehId: Long,
+    val title: String
+)
+
+// هر نوبت از یک گفتگو: اشاره به یک بخش موجود + ترتیبش در گفتگو
+@Entity(
+    tableName = "dialogue_turns",
+    foreignKeys = [
+        ForeignKey(entity = DialogueEntity::class, parentColumns = ["id"], childColumns = ["dialogueId"], onDelete = ForeignKey.CASCADE),
+        ForeignKey(entity = SectionEntity::class, parentColumns = ["id"], childColumns = ["sectionId"], onDelete = ForeignKey.CASCADE)
+    ],
+    indices = [Index("dialogueId"), Index("sectionId")]
+)
+data class DialogueTurnEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val dialogueId: Long,
+    val sectionId: Long,
+    val orderIndex: Int
+)
+
+// گفتگو: مجموعه‌ای از بخش‌های موجود که کاربر به ترتیب به هم وصل می‌کند
+// (مثلاً مکالمه‌ی شمر و عباس)؛ فقط لینک است، متن اصلی کپی نمی‌شود.
+@Entity(
+    tableName = "dialogues",
+    foreignKeys = [ForeignKey(
+        entity = TaziehEntity::class,
+        parentColumns = ["id"],
+        childColumns = ["taziehId"],
+        onDelete = ForeignKey.CASCADE
+    )],
+    indices = [Index("taziehId")]
+)
+data class DialogueEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val taziehId: Long,
+    val title: String
+)
+
+// هر نوبت از یک گفتگو: اشاره به یک بخش موجود + ترتیبش در گفتگو
+@Entity(
+    tableName = "dialogue_turns",
+    foreignKeys = [
+        ForeignKey(
+            entity = DialogueEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["dialogueId"],
+            onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = SectionEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["sectionId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index("dialogueId"), Index("sectionId")]
+)
+data class DialogueTurnEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val dialogueId: Long,
+    val sectionId: Long,
+    val turnOrder: Int
+)
+
 // سطح ۴: بخش‌ها (ورود، ساقی‌نامه، شهادت و ...) - متعلق به یک نقش، شامل متن اشعار
 @Entity(
     tableName = "sections",

@@ -4,7 +4,9 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
 import androidx.room.withTransaction
+import androidx.sqlite.db.SupportSQLiteDatabase
 import org.json.JSONArray
 import java.net.HttpURLConnection
 import java.net.URL
@@ -16,9 +18,11 @@ import java.net.URL
         RoleEntity::class,
         SectionEntity::class,
         NoteEntity::class,
-        FootnoteEntity::class
+        FootnoteEntity::class,
+        DialogueEntity::class,
+        DialogueTurnEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -29,9 +33,47 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun searchDao(): SearchDao
     abstract fun noteDao(): NoteDao
     abstract fun footnoteDao(): FootnoteDao
+    abstract fun dialogueDao(): DialogueDao
+    abstract fun dialogueTurnDao(): DialogueTurnDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
+
+        /**
+         * از نسخه ۵ به ۶: فقط دو جدول تازه (گفتگو و نوبت‌های گفتگو) اضافه می‌شود؛
+         * هیچ جدول موجودی تغییر نمی‌کند. چون این تغییر را خودمان نوشتیم و ساختار
+         * دقیقش را مطمئنیم، برخلاف گذارهای قبلی، اینجا از Migration واقعی استفاده
+         * می‌کنیم تا داده‌ی کاربر (بوکمارک، یادداشت، پاورقی، نقش من) پاک نشود.
+         */
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `dialogues` (
+                        `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        `taziehId` INTEGER NOT NULL,
+                        `title` TEXT NOT NULL,
+                        FOREIGN KEY(`taziehId`) REFERENCES `taziehs`(`id`) ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_dialogues_taziehId` ON `dialogues` (`taziehId`)")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `dialogue_turns` (
+                        `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        `dialogueId` INTEGER NOT NULL,
+                        `sectionId` INTEGER NOT NULL,
+                        `orderIndex` INTEGER NOT NULL,
+                        FOREIGN KEY(`dialogueId`) REFERENCES `dialogues`(`id`) ON DELETE CASCADE,
+                        FOREIGN KEY(`sectionId`) REFERENCES `sections`(`id`) ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_dialogue_turns_dialogueId` ON `dialogue_turns` (`dialogueId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_dialogue_turns_sectionId` ON `dialogue_turns` (`sectionId`)")
+            }
+        }
 
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -40,11 +82,9 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "bookapp.db"
                 )
-                    // نکته درباره Migration: چون این تغییر (v4→v5) هم شامل حذف کامل زیرساخت
-                    // جدول‌های داخلی FTS (چند جدول سایه‌ی خودکار که Room می‌سازد) است، برای
-                    // اطمینان کامل این یکی گذار همچنان به‌صورت خودکار (پاک‌سازی و بازسازی) انجام
-                    // می‌شود. از همین نسخه به بعد، برای هر تغییر ساختار جدید Migration واقعی
-                    // (بدون پاک‌شدن داده‌ی کاربر) نوشته و اینجا اضافه خواهد شد.
+                    .addMigrations(MIGRATION_5_6)
+                    // برای گذارهای قبل از نسخه ۵ که مطمئن نیستیم schema دقیقشان چه بوده،
+                    // همچنان بازسازی خودکار انجام می‌شود.
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance

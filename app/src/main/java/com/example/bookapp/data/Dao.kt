@@ -100,3 +100,39 @@ interface FootnoteDao {
     @Query("DELETE FROM footnotes WHERE id = :footnoteId")
     suspend fun delete(footnoteId: Long)
 }
+
+@Dao
+interface DialogueDao {
+    @Query("SELECT * FROM dialogues WHERE taziehId = :taziehId ORDER BY id")
+    suspend fun getByTazieh(taziehId: Long): List<DialogueEntity>
+
+    @Query("SELECT * FROM dialogues WHERE id = :dialogueId")
+    suspend fun getById(dialogueId: Long): DialogueEntity
+
+    @Insert
+    suspend fun insert(dialogue: DialogueEntity): Long
+
+    @Query("UPDATE dialogues SET title = :title WHERE id = :dialogueId")
+    suspend fun updateTitle(dialogueId: Long, title: String)
+
+    @Query("DELETE FROM dialogues WHERE id = :dialogueId")
+    suspend fun delete(dialogueId: Long)
+}
+
+@Dao
+interface DialogueTurnDao {
+    @Query("SELECT * FROM dialogue_turns WHERE dialogueId = :dialogueId ORDER BY orderIndex")
+    suspend fun getByDialogue(dialogueId: Long): List<DialogueTurnEntity>
+
+    @Insert
+    suspend fun insert(turn: DialogueTurnEntity): Long
+
+    @Query("UPDATE dialogue_turns SET orderIndex = :orderIndex WHERE id = :turnId")
+    suspend fun updateOrderIndex(turnId: Long, orderIndex: Int)
+
+    @Query("DELETE FROM dialogue_turns WHERE id = :turnId")
+    suspend fun deleteTurn(turnId: Long)
+
+    @Query("DELETE FROM dialogue_turns WHERE dialogueId = :dialogueId")
+    suspend fun deleteAllForDialogue(dialogueId: Long)
+}

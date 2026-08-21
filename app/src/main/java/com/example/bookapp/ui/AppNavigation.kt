@@ -52,6 +52,9 @@ private const val ROUTE_TAZIEHS = "taziehs/{fieldId}/{fieldTitle}"
 private const val ROUTE_ROLES = "roles/{taziehId}/{taziehTitle}"
 private const val ROUTE_SECTIONS = "sections/{roleId}/{roleTitle}"
 private const val ROUTE_TAZIEH_INDEX = "tazieh_index/{taziehId}/{taziehTitle}"
+private const val ROUTE_DIALOGUES = "dialogues/{taziehId}/{taziehTitle}"
+private const val ROUTE_DIALOGUE_BUILDER = "dialogue_builder/{taziehId}/{taziehTitle}"
+private const val ROUTE_DIALOGUE_READER = "dialogue_reader/{dialogueId}"
 private const val ROUTE_TEXT = "text/{sectionId}"
 private const val ROUTE_TEXT_PAGER = "text_pager/{roleId}/{startIndex}"
 private const val ROUTE_COMPARE = "compare/{roleAId}/{roleBId}"
@@ -413,6 +416,11 @@ fun AppNavigation(
                         androidx.compose.material3.Text("فهرست")
                     }
                     androidx.compose.material3.TextButton(onClick = {
+                        navController.navigate("dialogues/$taziehId/$taziehTitle")
+                    }) {
+                        androidx.compose.material3.Text("گفتگوها")
+                    }
+                    androidx.compose.material3.TextButton(onClick = {
                         selectMyRoleMode = !selectMyRoleMode
                         compareMode = false
                         selectedIds = emptySet()
@@ -480,6 +488,116 @@ fun AppNavigation(
                             db.roleDao().updateOrderIndex(roleB.id, roleA.orderIndex)
                             reloadIndex()
                         }
+                    }
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(ROUTE_DIALOGUES) { backStackEntry ->
+            val taziehId = backStackEntry.arguments?.getString("taziehId")?.toLongOrNull() ?: 0L
+            val taziehTitle = backStackEntry.arguments?.getString("taziehTitle") ?: ""
+            var dialogues by remember { mutableStateOf(listOf<DialogueSummary>()) }
+            val scope = androidx.compose.runtime.rememberCoroutineScope()
+
+            suspend fun reloadDialogues() {
+                dialogues = db.dialogueDao().getByTazieh(taziehId).map { d ->
+                    DialogueSummary(d.id, d.title, db.dialogueTurnDao().getByDialogue(d.id).size)
+                }
+            }
+            LaunchedEffect(taziehId) { reloadDialogues() }
+
+            DialoguesScreen(
+                taziehTitle = taziehTitle,
+                dialogues = dialogues,
+                onOpenDialogue = { d -> navController.navigate("dialogue_reader/${d.id}") },
+                onDeleteDialogue = { d ->
+                    scope.launch {
+                        db.dialogueDao().delete(d.id)
+                        reloadDialogues()
+                    }
+                },
+                onCreateNew = { navController.navigate("dialogue_builder/$taziehId/$taziehTitle") },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(ROUTE_DIALOGUE_BUILDER) { backStackEntry ->
+            val taziehId = backStackEntry.arguments?.getString("taziehId")?.toLongOrNull() ?: 0L
+            val taziehTitle = backStackEntry.arguments?.getString("taziehTitle") ?: ""
+            var allSections by remember { mutableStateOf(listOf<SectionPickerItem>()) }
+            val scope = androidx.compose.runtime.rememberCoroutineScope()
+
+            LaunchedEffect(taziehId) {
+                val roles = db.roleDao().getByTazieh(taziehId)
+                allSections = roles.flatMap { role ->
+                    db.sectionDao().getByRole(role.id).map { section ->
+                        SectionPickerItem(section.id, role.title, section.title)
+                    }
+                }
+            }
+
+            DialogueBuilderScreen(
+                allSections = allSections,
+                onSave = { title, orderedSectionIds ->
+                    scope.launch {
+                        val dialogueId = db.dialogueDao().insert(com.example.bookapp.data.DialogueEntity(taziehId = taziehId, title = title))
+                        orderedSectionIds.forEachIndexed { index, sectionId ->
+                            db.dialogueTurnDao().insert(
+                                com.example.bookapp.data.DialogueTurnEntity(dialogueId = dialogueId, sectionId = sectionId, orderIndex = index)
+                            )
+                        }
+                        navController.popBackStack()
+                    }
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(ROUTE_DIALOGUE_READER) { backStackEntry ->
+            val dialogueId = backStackEntry.arguments?.getString("dialogueId")?.toLongOrNull() ?: 0L
+            var dialogueTitle by remember { mutableStateOf("") }
+            var turns by remember { mutableStateOf(listOf<DialogueTurnDisplay>()) }
+            val scope = androidx.compose.runtime.rememberCoroutineScope()
+
+            suspend fun reloadTurns() {
+                val dialogue = db.dialogueDao().getById(dialogueId)
+                dialogueTitle = dialogue.title
+                val turnEntities = db.dialogueTurnDao().getByDialogue(dialogueId)
+                turns = turnEntities.map { turn ->
+                    val section = db.sectionDao().getById(turn.sectionId)
+                    val role = db.roleDao().getById(section.roleId)
+                    DialogueTurnDisplay(
+                        turnId = turn.id,
+                        sectionId = section.id,
+                        roleTitle = role.title,
+                        sectionTitle = section.title,
+                        content = section.content
+                    )
+                }
+            }
+            LaunchedEffect(dialogueId) { reloadTurns() }
+
+            DialogueReaderScreen(
+                dialogueTitle = dialogueTitle,
+                turns = turns,
+                onMoveTurn = { index, direction ->
+                    scope.launch {
+                        val turnEntities = db.dialogueTurnDao().getByDialogue(dialogueId)
+                        val targetIndex = index + direction
+                        if (targetIndex in turnEntities.indices) {
+                            val a = turnEntities[index]
+                            val b = turnEntities[targetIndex]
+                            db.dialogueTurnDao().updateOrderIndex(a.id, b.orderIndex)
+                            db.dialogueTurnDao().updateOrderIndex(b.id, a.orderIndex)
+                            reloadTurns()
+                        }
+                    }
+                },
+                onDeleteTurn = { turn ->
+                    scope.launch {
+                        db.dialogueTurnDao().deleteTurn(turn.turnId)
+                        reloadTurns()
                     }
                 },
                 onBack = { navController.popBackStack() }
