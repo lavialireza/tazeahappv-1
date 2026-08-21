@@ -25,9 +25,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.bookapp.data.AudioPlayerHelper
+import com.example.bookapp.data.FootnoteEntity
 import com.example.bookapp.data.Prefs
 import com.example.bookapp.data.SearchResult
 import com.example.bookapp.data.SpeechHelper
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,9 +43,14 @@ fun TextScreen(
     audioUrl: String? = null,
     relatedSections: List<SearchResult> = emptyList(),
     onRelatedClick: (SearchResult) -> Unit = {},
+    footnotes: List<FootnoteEntity> = emptyList(),
+    onAddFootnote: (term: String, explanation: String) -> Unit = { _, _ -> },
+    onEditFootnote: (FootnoteEntity, term: String, explanation: String) -> Unit = { _, _, _ -> },
+    onDeleteFootnote: (FootnoteEntity) -> Unit = {},
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val lineSpacing = remember { Prefs.getLineSpacing(context) }
     var isSpeaking by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -150,7 +158,24 @@ fun TextScreen(
                 AssistChip(onClick = { showTagDialog = true }, label = { Text(tag!!) })
                 Spacer(Modifier.height(8.dp))
             }
-            Text(content, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                content,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    lineHeight = MaterialTheme.typography.bodyLarge.fontSize * lineSpacing
+                )
+            )
+
+            if (sectionId != null) {
+                Spacer(Modifier.height(24.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(16.dp))
+                FootnotesSection(
+                    footnotes = footnotes,
+                    onAdd = onAddFootnote,
+                    onEdit = onEditFootnote,
+                    onDelete = onDeleteFootnote
+                )
+            }
 
             if (relatedSections.isNotEmpty()) {
                 Spacer(Modifier.height(24.dp))
@@ -227,6 +252,105 @@ private fun shareText(context: Context, title: String, content: String) {
         putExtra(Intent.EXTRA_TEXT, "$title\n\n$content")
     }
     context.startActivity(Intent.createChooser(intent, "اشتراک‌گذاری"))
+}
+
+/**
+ * پاورقی: توضیح واژه‌ها/عبارت‌های یک بخش (معنی لغت، توضیح مختصر، منبع و ...).
+ * کاملاً توسط خود کاربر نوشته، ذخیره و ویرایش می‌شود؛ چیزی از پیش تولید نمی‌شود.
+ */
+@Composable
+private fun FootnotesSection(
+    footnotes: List<FootnoteEntity>,
+    onAdd: (term: String, explanation: String) -> Unit,
+    onEdit: (FootnoteEntity, term: String, explanation: String) -> Unit,
+    onDelete: (FootnoteEntity) -> Unit
+) {
+    var showDialog by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf<FootnoteEntity?>(null) }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+    ) {
+        Text("پاورقی", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+        TextButton(onClick = { editing = null; showDialog = true }) {
+            Icon(Icons.Filled.Add, contentDescription = null)
+            Spacer(Modifier.width(4.dp))
+            Text("افزودن پاورقی")
+        }
+    }
+
+    if (footnotes.isEmpty()) {
+        Text(
+            "هنوز پاورقی‌ای برای این بخش ثبت نشده (مثلاً معنی یک واژه، توضیح مختصر یا منبع).",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    } else {
+        footnotes.forEach { fn ->
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.Top
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(fn.term, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(2.dp))
+                        Text(fn.explanation, style = MaterialTheme.typography.bodySmall)
+                    }
+                    IconButton(onClick = { editing = fn; showDialog = true }) {
+                        Icon(Icons.Filled.Label, contentDescription = "ویرایش پاورقی")
+                    }
+                    IconButton(onClick = { onDelete(fn) }) {
+                        Icon(Icons.Filled.Delete, contentDescription = "حذف پاورقی")
+                    }
+                }
+            }
+        }
+    }
+
+    if (showDialog) {
+        var term by remember { mutableStateOf(editing?.term ?: "") }
+        var explanation by remember { mutableStateOf(editing?.explanation ?: "") }
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text(if (editing == null) "افزودن پاورقی" else "ویرایش پاورقی") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = term,
+                        onValueChange = { term = it },
+                        label = { Text("واژه یا عبارت") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = explanation,
+                        onValueChange = { explanation = it },
+                        label = { Text("توضیح (معنی، منبع، نکته و ...)") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (term.isNotBlank() && explanation.isNotBlank()) {
+                        val current = editing
+                        if (current == null) onAdd(term.trim(), explanation.trim())
+                        else onEdit(current, term.trim(), explanation.trim())
+                    }
+                    showDialog = false
+                }) { Text("ذخیره") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }) { Text("انصراف") }
+            }
+        )
+    }
 }
 
 /**

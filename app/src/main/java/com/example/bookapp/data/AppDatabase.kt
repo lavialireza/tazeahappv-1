@@ -5,7 +5,6 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.withTransaction
-import androidx.sqlite.db.SupportSQLiteDatabase
 import org.json.JSONArray
 import java.net.HttpURLConnection
 import java.net.URL
@@ -17,9 +16,9 @@ import java.net.URL
         RoleEntity::class,
         SectionEntity::class,
         NoteEntity::class,
-        SectionFts::class
+        FootnoteEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -29,6 +28,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun sectionDao(): SectionDao
     abstract fun searchDao(): SearchDao
     abstract fun noteDao(): NoteDao
+    abstract fun footnoteDao(): FootnoteDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
@@ -40,46 +40,15 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "bookapp.db"
                 )
-                    // چون بین نسخه‌ها Migration رسمی نداریم، دیتابیس محتوا از نو ساخته می‌شود
-                    // (بارگذاری اولیه دوباره از فایل‌های assets/content انجام می‌شود)
+                    // نکته درباره Migration: چون این تغییر (v4→v5) هم شامل حذف کامل زیرساخت
+                    // جدول‌های داخلی FTS (چند جدول سایه‌ی خودکار که Room می‌سازد) است، برای
+                    // اطمینان کامل این یکی گذار همچنان به‌صورت خودکار (پاک‌سازی و بازسازی) انجام
+                    // می‌شود. از همین نسخه به بعد، برای هر تغییر ساختار جدید Migration واقعی
+                    // (بدون پاک‌شدن داده‌ی کاربر) نوشته و اینجا اضافه خواهد شد.
                     .fallbackToDestructiveMigration()
-                    .addCallback(ftsSyncTriggersCallback)
                     .build()
                 INSTANCE = instance
                 instance
-            }
-        }
-
-        /**
-         * جدول sections_fts یک "external content table" است؛ Room خودش تریگر
-         * همگام‌سازی نمی‌سازد، پس با این Callback بعد از ساخت دیتابیس (فقط یک‌بار،
-         * موقع onCreate) تریگرهای INSERT/UPDATE/DELETE لازم را دستی می‌سازیم.
-         */
-        private val ftsSyncTriggersCallback = object : RoomDatabase.Callback() {
-            override fun onCreate(db: SupportSQLiteDatabase) {
-                super.onCreate(db)
-                db.execSQL(
-                    """
-                    CREATE TRIGGER IF NOT EXISTS sections_fts_ai AFTER INSERT ON sections BEGIN
-                        INSERT INTO sections_fts(rowid, title, content) VALUES (new.id, new.title, new.content);
-                    END;
-                    """.trimIndent()
-                )
-                db.execSQL(
-                    """
-                    CREATE TRIGGER IF NOT EXISTS sections_fts_ad AFTER DELETE ON sections BEGIN
-                        DELETE FROM sections_fts WHERE rowid = old.id;
-                    END;
-                    """.trimIndent()
-                )
-                db.execSQL(
-                    """
-                    CREATE TRIGGER IF NOT EXISTS sections_fts_au AFTER UPDATE ON sections BEGIN
-                        DELETE FROM sections_fts WHERE rowid = old.id;
-                        INSERT INTO sections_fts(rowid, title, content) VALUES (new.id, new.title, new.content);
-                    END;
-                    """.trimIndent()
-                )
             }
         }
     }

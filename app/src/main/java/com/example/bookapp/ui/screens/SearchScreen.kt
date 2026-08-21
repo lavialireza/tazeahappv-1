@@ -7,6 +7,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -22,6 +24,8 @@ fun SearchScreen(
     allTaziehs: List<TaziehEntity>,
     onSearch: suspend (query: String, fieldId: Long?, taziehId: Long?) -> List<SearchResult>,
     onResultClick: (SearchResult) -> Unit,
+    isBookmarked: (Long) -> Boolean = { false },
+    onToggleBookmark: (Long) -> Unit = {},
     onBack: () -> Unit
 ) {
     var query by remember { mutableStateOf("") }
@@ -125,6 +129,14 @@ fun SearchScreen(
                         ListItem(
                             headlineContent = { Text(r.sectionTitle) },
                             supportingContent = { Text("${r.fieldTitle} ← ${r.taziehTitle} ← ${r.roleTitle}") },
+                            trailingContent = {
+                                IconButton(onClick = { onToggleBookmark(r.sectionId) }) {
+                                    Icon(
+                                        if (isBookmarked(r.sectionId)) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                                        contentDescription = "نشان کردن"
+                                    )
+                                }
+                            },
                             modifier = Modifier.clickable { onResultClick(r) }
                         )
                         HorizontalDivider()

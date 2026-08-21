@@ -3,6 +3,7 @@ package com.example.bookapp.data
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 
 @Dao
 interface FieldDao {
@@ -83,4 +84,19 @@ interface SectionDao {
 
     @Query("DELETE FROM sections")
     suspend fun deleteAll()
+}
+
+@Dao
+interface FootnoteDao {
+    @Query("SELECT * FROM footnotes WHERE sectionId = :sectionId ORDER BY id")
+    suspend fun getBySection(sectionId: Long): List<FootnoteEntity>
+
+    @Insert
+    suspend fun insert(footnote: FootnoteEntity): Long
+
+    @Update
+    suspend fun update(footnote: FootnoteEntity)
+
+    @Query("DELETE FROM footnotes WHERE id = :footnoteId")
+    suspend fun delete(footnoteId: Long)
 }

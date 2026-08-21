@@ -49,6 +49,25 @@ data class RoleEntity(
     val orderIndex: Int = 0
 )
 
+// پاورقی: توضیح یک واژه/عبارت خاص در یک بخش (معنی لغت، توضیح مختصر، منبع و ...)
+// کاربر خودش این‌ها را از داخل برنامه اضافه/ویرایش/حذف می‌کند.
+@Entity(
+    tableName = "footnotes",
+    foreignKeys = [ForeignKey(
+        entity = SectionEntity::class,
+        parentColumns = ["id"],
+        childColumns = ["sectionId"],
+        onDelete = ForeignKey.CASCADE
+    )],
+    indices = [Index("sectionId")]
+)
+data class FootnoteEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val sectionId: Long,
+    val term: String,       // واژه یا عبارتی که توضیح داده می‌شود
+    val explanation: String // متن توضیح (معنی، منبع، نکته و ...)
+)
+
 // سطح ۴: بخش‌ها (ورود، ساقی‌نامه، شهادت و ...) - متعلق به یک نقش، شامل متن اشعار
 @Entity(
     tableName = "sections",

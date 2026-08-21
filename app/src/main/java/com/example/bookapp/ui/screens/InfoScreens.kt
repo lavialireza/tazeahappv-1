@@ -62,6 +62,15 @@ fun AboutScreen(
             }
 
             Spacer(Modifier.height(24.dp))
+            HorizontalDivider()
+            Spacer(Modifier.height(16.dp))
+            Text("مشخصات طراحی و گردآوری", style = MaterialTheme.typography.titleSmall)
+            Spacer(Modifier.height(8.dp))
+            Text("طراح و گردآورنده: [نام خودتان را اینجا بنویسید]")
+            Text("نسخه: ${BuildConfig.VERSION_NAME}")
+            Text("راه ارتباطی: [ایمیل یا شبکه اجتماعی]")
+
+            Spacer(Modifier.height(24.dp))
             Button(onClick = {
                 val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                     type = "text/plain"
@@ -139,6 +148,19 @@ fun SettingsScreen(
                 FontSizeOption("متوسط", 1.0f, fontScale, onFontScaleChange)
                 FontSizeOption("بزرگ", 1.3f, fontScale, onFontScaleChange)
                 FontSizeOption("خیلی بزرگ", 1.6f, fontScale, onFontScaleChange)
+            }
+
+            Spacer(Modifier.height(24.dp))
+            Text("فاصله خطوط متن", style = MaterialTheme.typography.bodyLarge)
+            Spacer(Modifier.height(8.dp))
+            var lineSpacing by remember { mutableStateOf(Prefs.getLineSpacing(context)) }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                LineSpacingOption("فشرده", 1.1f, lineSpacing) { lineSpacing = it; Prefs.setLineSpacing(context, it) }
+                LineSpacingOption("معمولی", 1.4f, lineSpacing) { lineSpacing = it; Prefs.setLineSpacing(context, it) }
+                LineSpacingOption("بازتر", 1.8f, lineSpacing) { lineSpacing = it; Prefs.setLineSpacing(context, it) }
             }
 
             Spacer(Modifier.height(24.dp))
@@ -237,6 +259,16 @@ fun SettingsScreen(
 
 @Composable
 private fun FontSizeOption(label: String, value: Float, current: Float, onSelect: (Float) -> Unit) {
+    val selected = kotlin.math.abs(current - value) < 0.01f
+    FilterChip(
+        selected = selected,
+        onClick = { onSelect(value) },
+        label = { Text(label) }
+    )
+}
+
+@Composable
+private fun LineSpacingOption(label: String, value: Float, current: Float, onSelect: (Float) -> Unit) {
     val selected = kotlin.math.abs(current - value) < 0.01f
     FilterChip(
         selected = selected,

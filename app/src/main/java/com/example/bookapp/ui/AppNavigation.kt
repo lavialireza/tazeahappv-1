@@ -30,9 +30,6 @@ import com.example.bookapp.data.NoteEntity
 import com.example.bookapp.data.Prefs
 import com.example.bookapp.data.SearchResult
 import com.example.bookapp.data.SectionEntity
-import com.example.bookapp.data.search
-import com.example.bookapp.data.searchInField
-import com.example.bookapp.data.searchInTazieh
 import com.example.bookapp.data.syncLocalContentFiles
 import com.example.bookapp.data.syncRemoteContent
 import com.example.bookapp.ui.screens.*
@@ -164,6 +161,7 @@ fun AppNavigation(
         composable(ROUTE_SEARCH) {
             var fields by remember { mutableStateOf(listOf<com.example.bookapp.data.FieldEntity>()) }
             var allTaziehs by remember { mutableStateOf(listOf<com.example.bookapp.data.TaziehEntity>()) }
+            var bookmarkedIds by remember { mutableStateOf(Prefs.getBookmarks(context)) }
             LaunchedEffect(Unit) {
                 fields = db.fieldDao().getAll()
                 allTaziehs = db.taziehDao().getAll()
@@ -179,6 +177,11 @@ fun AppNavigation(
                     }
                 },
                 onResultClick = { result -> navController.navigate("text/${result.sectionId}") },
+                isBookmarked = { id -> id in bookmarkedIds },
+                onToggleBookmark = { id ->
+                    Prefs.toggleBookmark(context, id)
+                    bookmarkedIds = Prefs.getBookmarks(context)
+                },
                 onBack = { navController.popBackStack() }
             )
         }
@@ -577,6 +580,13 @@ fun AppNavigation(
             var bookmarked by remember { mutableStateOf(Prefs.isBookmarked(context, sectionId)) }
             var relatedSections by remember { mutableStateOf(listOf<com.example.bookapp.data.SearchResult>()) }
             var sectionAudioUrl by remember { mutableStateOf<String?>(null) }
+            var footnotes by remember { mutableStateOf(listOf<com.example.bookapp.data.FootnoteEntity>()) }
+            val scope = androidx.compose.runtime.rememberCoroutineScope()
+
+            suspend fun reloadFootnotes() {
+                footnotes = db.footnoteDao().getBySection(sectionId)
+            }
+
             LaunchedEffect(sectionId) {
                 val section = db.sectionDao().getById(sectionId)
                 title = section.title
@@ -586,6 +596,7 @@ fun AppNavigation(
                 Prefs.addRecent(context, sectionId)
                 Prefs.markSectionRead(context, sectionId)
                 relatedSections = db.searchDao().getRelatedByTitle(section.title, sectionId)
+                reloadFootnotes()
             }
             TextScreen(
                 title = title,
@@ -598,6 +609,25 @@ fun AppNavigation(
                 audioUrl = sectionAudioUrl,
                 relatedSections = relatedSections,
                 onRelatedClick = { related -> navController.navigate("text/${related.sectionId}") },
+                footnotes = footnotes,
+                onAddFootnote = { term, explanation ->
+                    scope.launch {
+                        db.footnoteDao().insert(com.example.bookapp.data.FootnoteEntity(sectionId = sectionId, term = term, explanation = explanation))
+                        reloadFootnotes()
+                    }
+                },
+                onEditFootnote = { fn, term, explanation ->
+                    scope.launch {
+                        db.footnoteDao().update(fn.copy(term = term, explanation = explanation))
+                        reloadFootnotes()
+                    }
+                },
+                onDeleteFootnote = { fn ->
+                    scope.launch {
+                        db.footnoteDao().delete(fn.id)
+                        reloadFootnotes()
+                    }
+                },
                 onBack = { navController.popBackStack() }
             )
         }

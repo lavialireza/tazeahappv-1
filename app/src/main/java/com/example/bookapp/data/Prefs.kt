@@ -224,4 +224,17 @@ object Prefs {
         current.addAll(fileNames)
         prefs.edit().putStringSet(KEY_PROCESSED_CONTENT_FILES, current).apply()
     }
+
+    private const val KEY_LINE_SPACING = "line_spacing"
+
+    /** ضریب فاصله خطوط متن (پیش‌فرض ۱.۴)؛ برای مثال ۱.۱ فشرده، ۱.۸ بازتر */
+    fun getLineSpacing(context: Context): Float {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getFloat(KEY_LINE_SPACING, 1.4f)
+    }
+
+    fun setLineSpacing(context: Context, value: Float) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putFloat(KEY_LINE_SPACING, value).apply()
+    }
 }
