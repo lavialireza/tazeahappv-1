@@ -48,7 +48,12 @@ fun DialogueBuilderScreen(
             )
         }
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .imePadding()
+        ) {
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
@@ -110,10 +115,24 @@ fun DialogueBuilderScreen(
             Button(
                 onClick = { onSave(title.trim(), selectedSequence.map { it.sectionId }) },
                 enabled = title.isNotBlank() && selectedSequence.size >= 2,
-                modifier = Modifier.fillMaxWidth().padding(16.dp)
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
             ) {
                 Text("ذخیره گفتگو")
             }
+            if (title.isBlank() || selectedSequence.size < 2) {
+                Text(
+                    when {
+                        title.isBlank() && selectedSequence.size < 2 ->
+                            "برای فعال‌شدن: یک نام برای گفتگو بنویسید و حداقل ۲ بخش از فهرست پایین انتخاب کنید."
+                        title.isBlank() -> "برای فعال‌شدن: یک نام برای گفتگو بنویسید."
+                        else -> "برای فعال‌شدن: حداقل ۲ بخش از فهرست پایین انتخاب کنید (الان ${selectedSequence.size} تا)."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)
+                )
+            }
+            Spacer(Modifier.height(16.dp))
         }
     }
 }
