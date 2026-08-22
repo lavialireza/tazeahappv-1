@@ -55,6 +55,7 @@ private const val ROUTE_TAZIEH_INDEX = "tazieh_index/{taziehId}/{taziehTitle}"
 private const val ROUTE_DIALOGUES = "dialogues/{taziehId}/{taziehTitle}"
 private const val ROUTE_DIALOGUE_BUILDER = "dialogue_builder/{taziehId}/{taziehTitle}"
 private const val ROUTE_DIALOGUE_READER = "dialogue_reader/{dialogueId}"
+private const val ROUTE_TAZIEH_GALLERY = "tazieh_gallery/{taziehId}/{taziehTitle}"
 private const val ROUTE_TEXT = "text/{sectionId}"
 private const val ROUTE_TEXT_PAGER = "text_pager/{roleId}/{startIndex}"
 private const val ROUTE_COMPARE = "compare/{roleAId}/{roleBId}"
@@ -410,29 +411,48 @@ fun AppNavigation(
                     else -> null
                 },
                 topBarAction = {
-                    androidx.compose.material3.TextButton(onClick = {
-                        navController.navigate("tazieh_index/$taziehId/$taziehTitle")
-                    }) {
-                        androidx.compose.material3.Text("فهرست")
-                    }
-                    androidx.compose.material3.TextButton(onClick = {
-                        navController.navigate("dialogues/$taziehId/$taziehTitle")
-                    }) {
-                        androidx.compose.material3.Text("گفتگوها")
-                    }
-                    androidx.compose.material3.TextButton(onClick = {
-                        selectMyRoleMode = !selectMyRoleMode
-                        compareMode = false
-                        selectedIds = emptySet()
-                    }) {
-                        androidx.compose.material3.Text(if (selectMyRoleMode) "لغو" else "نقش من")
-                    }
-                    androidx.compose.material3.TextButton(onClick = {
-                        compareMode = !compareMode
-                        selectMyRoleMode = false
-                        selectedIds = emptySet()
-                    }) {
-                        androidx.compose.material3.Text(if (compareMode) "لغو" else "مقایسه")
+                    var menuExpanded by remember { mutableStateOf(false) }
+                    androidx.compose.foundation.layout.Row {
+                        androidx.compose.material3.TextButton(onClick = {
+                            selectMyRoleMode = !selectMyRoleMode
+                            compareMode = false
+                            selectedIds = emptySet()
+                        }) {
+                            androidx.compose.material3.Text(if (selectMyRoleMode) "لغو" else "نقش من")
+                        }
+                        androidx.compose.material3.TextButton(onClick = {
+                            compareMode = !compareMode
+                            selectMyRoleMode = false
+                            selectedIds = emptySet()
+                        }) {
+                            androidx.compose.material3.Text(if (compareMode) "لغو" else "مقایسه")
+                        }
+                        androidx.compose.material3.IconButton(onClick = { menuExpanded = true }) {
+                            androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.MoreVert, contentDescription = "بیشتر")
+                        }
+                        androidx.compose.material3.DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { androidx.compose.material3.Text("فهرست") },
+                                onClick = {
+                                    menuExpanded = false
+                                    navController.navigate("tazieh_index/$taziehId/$taziehTitle")
+                                }
+                            )
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { androidx.compose.material3.Text("گفتگوها") },
+                                onClick = {
+                                    menuExpanded = false
+                                    navController.navigate("dialogues/$taziehId/$taziehTitle")
+                                }
+                            )
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { androidx.compose.material3.Text("تصاویر") },
+                                onClick = {
+                                    menuExpanded = false
+                                    navController.navigate("tazieh_gallery/$taziehId/$taziehTitle")
+                                }
+                            )
+                        }
                     }
                 },
                 snackbarHostState = snackbarHostState
@@ -604,6 +624,48 @@ fun AppNavigation(
             )
         }
 
+        composable(ROUTE_TAZIEH_GALLERY) { backStackEntry ->
+            val taziehId = backStackEntry.arguments?.getString("taziehId")?.toLongOrNull() ?: 0L
+            val taziehTitle = backStackEntry.arguments?.getString("taziehTitle") ?: ""
+            var images by remember { mutableStateOf(listOf<TaziehImageItem>()) }
+            val scope = androidx.compose.runtime.rememberCoroutineScope()
+
+            suspend fun reloadImages() {
+                images = db.taziehImageDao().getByTazieh(taziehId).map {
+                    TaziehImageItem(it.id, it.filePath, it.caption)
+                }
+            }
+            LaunchedEffect(taziehId) { reloadImages() }
+
+            TaziehGalleryScreen(
+                taziehTitle = taziehTitle,
+                images = images,
+                onAddImage = { uri ->
+                    scope.launch {
+                        val path = com.example.bookapp.data.copyImageToAppStorage(context, uri)
+                        if (path != null) {
+                            db.taziehImageDao().insert(com.example.bookapp.data.TaziehImageEntity(taziehId = taziehId, filePath = path))
+                            reloadImages()
+                        }
+                    }
+                },
+                onDeleteImage = { image ->
+                    scope.launch {
+                        db.taziehImageDao().delete(image.id)
+                        com.example.bookapp.data.deleteImageFromAppStorage(image.filePath)
+                        reloadImages()
+                    }
+                },
+                onUpdateCaption = { image, caption ->
+                    scope.launch {
+                        db.taziehImageDao().updateCaption(image.id, caption)
+                        reloadImages()
+                    }
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
         composable(ROUTE_COMPARE) { backStackEntry ->
             val roleAId = backStackEntry.arguments?.getString("roleAId")?.toLongOrNull() ?: 0L
             val roleBId = backStackEntry.arguments?.getString("roleBId")?.toLongOrNull() ?: 0L
@@ -686,6 +748,8 @@ fun AppNavigation(
                         Prefs.addRecent(context, id)
                         Prefs.markSectionRead(context, id)
                     },
+                    onOpenSearch = { navController.navigate(ROUTE_SEARCH) },
+                    onOpenSettings = { navController.navigate(ROUTE_SETTINGS) },
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -746,6 +810,8 @@ fun AppNavigation(
                         reloadFootnotes()
                     }
                 },
+                onOpenSearch = { navController.navigate(ROUTE_SEARCH) },
+                onOpenSettings = { navController.navigate(ROUTE_SETTINGS) },
                 onBack = { navController.popBackStack() }
             )
         }

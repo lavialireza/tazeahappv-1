@@ -20,9 +20,10 @@ import java.net.URL
         NoteEntity::class,
         FootnoteEntity::class,
         DialogueEntity::class,
-        DialogueTurnEntity::class
+        DialogueTurnEntity::class,
+        TaziehImageEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -35,6 +36,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun footnoteDao(): FootnoteDao
     abstract fun dialogueDao(): DialogueDao
     abstract fun dialogueTurnDao(): DialogueTurnDao
+    abstract fun taziehImageDao(): TaziehImageDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
@@ -75,6 +77,24 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** از نسخه ۶ به ۷: فقط جدول تصاویر تعزیه اضافه می‌شود. */
+        private val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `tazieh_images` (
+                        `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        `taziehId` INTEGER NOT NULL,
+                        `filePath` TEXT NOT NULL,
+                        `caption` TEXT NOT NULL DEFAULT '',
+                        FOREIGN KEY(`taziehId`) REFERENCES `taziehs`(`id`) ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_tazieh_images_taziehId` ON `tazieh_images` (`taziehId`)")
+            }
+        }
+
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -82,7 +102,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "bookapp.db"
                 )
-                    .addMigrations(MIGRATION_5_6)
+                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7)
                     // برای گذارهای قبل از نسخه ۵ که مطمئن نیستیم schema دقیقشان چه بوده،
                     // همچنان بازسازی خودکار انجام می‌شود.
                     .fallbackToDestructiveMigration()

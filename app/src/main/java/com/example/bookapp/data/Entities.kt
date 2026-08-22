@@ -135,3 +135,22 @@ data class DialogueTurnEntity(
     val sectionId: Long,
     val orderIndex: Int
 )
+
+// عکس‌های قدیمی/تاریخی مربوط به یک تعزیه (نسخه‌های خطی، تعزیه‌خوانان معروف و ...)
+// خود فایل عکس در حافظه داخلی برنامه کپی می‌شود و فقط مسیرش اینجا ذخیره می‌شود.
+@Entity(
+    tableName = "tazieh_images",
+    foreignKeys = [ForeignKey(
+        entity = TaziehEntity::class,
+        parentColumns = ["id"],
+        childColumns = ["taziehId"],
+        onDelete = ForeignKey.CASCADE
+    )],
+    indices = [Index("taziehId")]
+)
+data class TaziehImageEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val taziehId: Long,
+    val filePath: String,   // مسیر فایل در حافظه داخلی برنامه
+    val caption: String = "" // توضیح اختیاری (مثلاً «نسخه خطی قرن سیزدهم» یا اسم تعزیه‌خوان)
+)

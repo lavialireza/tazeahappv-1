@@ -136,3 +136,21 @@ interface DialogueTurnDao {
     @Query("DELETE FROM dialogue_turns WHERE dialogueId = :dialogueId")
     suspend fun deleteAllForDialogue(dialogueId: Long)
 }
+
+@Dao
+interface TaziehImageDao {
+    @Query("SELECT * FROM tazieh_images WHERE taziehId = :taziehId ORDER BY id")
+    suspend fun getByTazieh(taziehId: Long): List<TaziehImageEntity>
+
+    @Insert
+    suspend fun insert(image: TaziehImageEntity): Long
+
+    @Query("UPDATE tazieh_images SET caption = :caption WHERE id = :imageId")
+    suspend fun updateCaption(imageId: Long, caption: String)
+
+    @Query("SELECT * FROM tazieh_images WHERE id = :imageId")
+    suspend fun getById(imageId: Long): TaziehImageEntity
+
+    @Query("DELETE FROM tazieh_images WHERE id = :imageId")
+    suspend fun delete(imageId: Long)
+}

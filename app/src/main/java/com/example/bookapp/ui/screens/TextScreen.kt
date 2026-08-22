@@ -47,6 +47,8 @@ fun TextScreen(
     onAddFootnote: (term: String, explanation: String) -> Unit = { _, _ -> },
     onEditFootnote: (FootnoteEntity, term: String, explanation: String) -> Unit = { _, _, _ -> },
     onDeleteFootnote: (FootnoteEntity) -> Unit = {},
+    onOpenSearch: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -107,6 +109,12 @@ fun TextScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onOpenSearch) {
+                        Icon(Icons.Filled.Search, contentDescription = "جستجو")
+                    }
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(Icons.Filled.Settings, contentDescription = "تنظیمات")
+                    }
                     IconButton(onClick = {
                         if (isSpeaking) {
                             speechHelper.stop()
@@ -126,22 +134,31 @@ fun TextScreen(
                             contentDescription = if (isSpeaking) "توقف خواندن" else if (!audioUrl.isNullOrBlank()) "پخش صدای واقعی" else "خواندن صوتی"
                         )
                     }
-                    if (sectionId != null) {
-                        IconButton(onClick = { showTagDialog = true }) {
-                            Icon(Icons.Filled.Label, contentDescription = "برچسب شخصی")
-                        }
-                    }
                     IconButton(onClick = onToggleBookmark) {
                         Icon(
                             if (isBookmarked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                             contentDescription = "نشان کردن"
                         )
                     }
-                    IconButton(onClick = { copyToClipboard(context, title, content) }) {
-                        Icon(Icons.Filled.ContentCopy, contentDescription = "کپی متن")
+                    var moreExpanded by remember { mutableStateOf(false) }
+                    IconButton(onClick = { moreExpanded = true }) {
+                        Icon(Icons.Filled.MoreVert, contentDescription = "بیشتر")
                     }
-                    IconButton(onClick = { shareText(context, title, content) }) {
-                        Icon(Icons.Filled.Share, contentDescription = "اشتراک‌گذاری")
+                    DropdownMenu(expanded = moreExpanded, onDismissRequest = { moreExpanded = false }) {
+                        if (sectionId != null) {
+                            DropdownMenuItem(
+                                text = { Text("برچسب شخصی") },
+                                onClick = { moreExpanded = false; showTagDialog = true }
+                            )
+                        }
+                        DropdownMenuItem(
+                            text = { Text("کپی متن") },
+                            onClick = { moreExpanded = false; copyToClipboard(context, title, content) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("اشتراک‌گذاری") },
+                            onClick = { moreExpanded = false; shareText(context, title, content) }
+                        )
                     }
                 }
             )
@@ -365,6 +382,8 @@ fun TextPagerScreen(
     isBookmarked: (Long) -> Boolean,
     onToggleBookmark: (Long) -> Unit,
     onPageShown: (Long) -> Unit,
+    onOpenSearch: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
     onBack: () -> Unit
 ) {
     val pagerState = androidx.compose.foundation.pager.rememberPagerState(
@@ -387,6 +406,8 @@ fun TextPagerScreen(
                 onToggleBookmark = { onToggleBookmark(section.id) },
                 sectionId = section.id,
                 audioUrl = section.audioUrl,
+                onOpenSearch = onOpenSearch,
+                onOpenSettings = onOpenSettings,
                 onBack = onBack
             )
         }
