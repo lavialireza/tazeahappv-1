@@ -19,6 +19,10 @@ class AudioPlayerHelper(private val context: Context, private val onStatus: (Str
             val mp = MediaPlayer()
             if (audioUrl.startsWith("http://") || audioUrl.startsWith("https://")) {
                 mp.setDataSource(audioUrl)
+            } else if (audioUrl.startsWith("/")) {
+                // مسیر مطلق فایل (مثلاً فایلی که کاربر از داخل اپ اضافه کرده و در
+                // حافظه‌ی اختصاصی اپ کپی شده)، نه یک asset داخل بسته‌ی نصب
+                mp.setDataSource(audioUrl)
             } else {
                 val afd = context.assets.openFd(audioUrl)
                 mp.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)

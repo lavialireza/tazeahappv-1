@@ -82,6 +82,9 @@ interface SectionDao {
     @Insert
     suspend fun insert(section: SectionEntity): Long
 
+    @Query("UPDATE sections SET audioUrl = :audioUrl WHERE id = :sectionId")
+    suspend fun updateAudioUrl(sectionId: Long, audioUrl: String?)
+
     @Query("DELETE FROM sections")
     suspend fun deleteAll()
 }

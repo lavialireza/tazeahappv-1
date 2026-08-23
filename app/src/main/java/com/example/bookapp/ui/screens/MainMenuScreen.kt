@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.School
@@ -36,6 +37,7 @@ fun MainMenuScreen(
     onOpenSearch: () -> Unit,
     onOpenBookmarks: () -> Unit,
     onOpenNotes: () -> Unit,
+    onOpenGallery: () -> Unit,
     onOpenMyRole: () -> Unit,
     onOpenAbout: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -94,6 +96,8 @@ fun MainMenuScreen(
             MenuCard("علاقه‌مندی‌ها", Icons.Filled.Favorite, onOpenBookmarks)
             Spacer(Modifier.height(10.dp))
             MenuCard("دفتر یادداشت", Icons.Filled.Edit, onOpenNotes)
+            Spacer(Modifier.height(10.dp))
+            MenuCard("گالری تصاویر", Icons.Filled.PhotoLibrary, onOpenGallery)
             Spacer(Modifier.height(10.dp))
             MenuCard("نقش من", Icons.Filled.School, onOpenMyRole, accentColor = TaziehGreen)
             Spacer(Modifier.height(10.dp))

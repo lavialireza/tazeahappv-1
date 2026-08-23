@@ -32,6 +32,7 @@ import com.example.bookapp.data.FootnoteEntity
 import com.example.bookapp.data.Prefs
 import com.example.bookapp.data.SearchResult
 import com.example.bookapp.data.SpeechHelper
+import kotlinx.coroutines.launch
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 
@@ -52,6 +53,12 @@ fun TextScreen(
     onDeleteFootnote: (FootnoteEntity) -> Unit = {},
     onOpenSearch: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
+    hasPrevSection: Boolean = false,
+    hasNextSection: Boolean = false,
+    onPrevSection: () -> Unit = {},
+    onNextSection: () -> Unit = {},
+    onAttachAudio: (android.net.Uri) -> Unit = {},
+    onRemoveAudio: () -> Unit = {},
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -77,6 +84,11 @@ fun TextScreen(
                 "done" -> isSpeaking = false
             }
         }
+    }
+    val audioPickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri: android.net.Uri? ->
+        if (uri != null) onAttachAudio(uri)
     }
 
     LaunchedEffect(statusMessage) {
@@ -162,6 +174,18 @@ fun TextScreen(
                             text = { Text("اشتراک‌گذاری") },
                             onClick = { moreExpanded = false; shareText(context, title, content) }
                         )
+                        if (sectionId != null) {
+                            DropdownMenuItem(
+                                text = { Text(if (audioUrl.isNullOrBlank()) "افزودن صدای واقعی" else "تعویض صدای واقعی") },
+                                onClick = { moreExpanded = false; audioPickerLauncher.launch("audio/*") }
+                            )
+                            if (!audioUrl.isNullOrBlank()) {
+                                DropdownMenuItem(
+                                    text = { Text("حذف صدای واقعی") },
+                                    onClick = { moreExpanded = false; onRemoveAudio() }
+                                )
+                            }
+                        }
                     }
                 }
             )
@@ -184,6 +208,18 @@ fun TextScreen(
                     lineHeight = MaterialTheme.typography.bodyLarge.fontSize * lineSpacing
                 )
             )
+
+            if (hasPrevSection || hasNextSection) {
+                Spacer(Modifier.height(16.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    OutlinedButton(onClick = onPrevSection, enabled = hasPrevSection) {
+                        Text("◀ بخش قبل")
+                    }
+                    OutlinedButton(onClick = onNextSection, enabled = hasNextSection) {
+                        Text("بخش بعد ▶")
+                    }
+                }
+            }
 
             if (sectionId != null) {
                 Spacer(Modifier.height(24.dp))
@@ -387,11 +423,14 @@ fun TextPagerScreen(
     onPageShown: (Long) -> Unit,
     onOpenSearch: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
+    onAttachAudio: (sectionId: Long, uri: android.net.Uri) -> Unit = { _, _ -> },
+    onRemoveAudio: (sectionId: Long) -> Unit = {},
     onBack: () -> Unit
 ) {
     val pagerState = androidx.compose.foundation.pager.rememberPagerState(
         initialPage = startIndex.coerceIn(0, (sections.size - 1).coerceAtLeast(0))
     ) { sections.size }
+    val pagerScope = androidx.compose.runtime.rememberCoroutineScope()
 
     LaunchedEffect(pagerState.currentPage) {
         if (sections.isNotEmpty()) {
@@ -411,6 +450,16 @@ fun TextPagerScreen(
                 audioUrl = section.audioUrl,
                 onOpenSearch = onOpenSearch,
                 onOpenSettings = onOpenSettings,
+                hasPrevSection = page > 0,
+                hasNextSection = page < sections.size - 1,
+                onPrevSection = {
+                    pagerScope.launch { pagerState.animateScrollToPage(page - 1) }
+                },
+                onNextSection = {
+                    pagerScope.launch { pagerState.animateScrollToPage(page + 1) }
+                },
+                onAttachAudio = { uri -> onAttachAudio(section.id, uri) },
+                onRemoveAudio = { onRemoveAudio(section.id) },
                 onBack = onBack
             )
         }

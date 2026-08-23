@@ -31,3 +31,29 @@ fun deleteImageFromAppStorage(filePath: String) {
         // نادیده گرفتن؛ حذف رکورد دیتابیس مهم‌تر از حذف فایل باقی‌مانده است
     }
 }
+
+/**
+ * فایل صوتی انتخاب‌شده از گوشی را برای یک بخش خاص در حافظه داخلی برنامه کپی
+ * می‌کند (مشابه copyImageToAppStorage) تا صدای واقعی/ضبط‌شده به‌جای صدای
+ * مصنوعی (TTS) پخش شود.
+ */
+fun copyAudioToAppStorage(context: Context, sourceUri: Uri): String? {
+    return try {
+        val dir = File(context.filesDir, "tazieh_audio").apply { mkdirs() }
+        val destFile = File(dir, "${UUID.randomUUID()}.mp3")
+        context.contentResolver.openInputStream(sourceUri)?.use { input ->
+            destFile.outputStream().use { output -> input.copyTo(output) }
+        }
+        destFile.absolutePath
+    } catch (e: Exception) {
+        null
+    }
+}
+
+fun deleteAudioFromAppStorage(filePath: String) {
+    try {
+        File(filePath).delete()
+    } catch (e: Exception) {
+        // نادیده گرفتن
+    }
+}

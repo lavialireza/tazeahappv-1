@@ -1,7 +1,9 @@
 package com.example.bookapp.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -141,8 +143,8 @@ fun SettingsScreen(
             Text("سایز متن", style = MaterialTheme.typography.bodyLarge)
             Spacer(Modifier.height(8.dp))
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 FontSizeOption("کوچک", 0.85f, fontScale, onFontScaleChange)
                 FontSizeOption("متوسط", 1.0f, fontScale, onFontScaleChange)
@@ -155,32 +157,40 @@ fun SettingsScreen(
             Spacer(Modifier.height(8.dp))
             var lineSpacing by remember { mutableStateOf(Prefs.getLineSpacing(context)) }
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 LineSpacingOption("فشرده", 1.1f, lineSpacing) { lineSpacing = it; Prefs.setLineSpacing(context, it) }
                 LineSpacingOption("معمولی", 1.4f, lineSpacing) { lineSpacing = it; Prefs.setLineSpacing(context, it) }
                 LineSpacingOption("بازتر", 1.8f, lineSpacing) { lineSpacing = it; Prefs.setLineSpacing(context, it) }
+            }
+            Spacer(Modifier.height(8.dp))
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+                Text(
+                    "این یک متن نمونه است تا فاصله‌ی خطوط را همین‌جا ببینید.\nخط دوم نمونه برای مقایسه فاصله با خط بالا.",
+                    style = MaterialTheme.typography.bodyLarge.copy(lineHeight = MaterialTheme.typography.bodyLarge.fontSize * lineSpacing),
+                    modifier = Modifier.padding(12.dp)
+                )
             }
 
             Spacer(Modifier.height(24.dp))
             Text("تم رنگی", style = MaterialTheme.typography.bodyLarge)
             Spacer(Modifier.height(8.dp))
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                ThemeOption("طلایی", "default", themeChoice, onThemeChoiceChange)
-                ThemeOption("سبز", "green", themeChoice, onThemeChoiceChange)
-                ThemeOption("قرمز", "red", themeChoice, onThemeChoiceChange)
+                ThemeOption("طلایی", "default", themeChoice, onThemeChoiceChange, androidx.compose.ui.graphics.Color(0xFFD4A94A))
+                ThemeOption("سبز", "green", themeChoice, onThemeChoiceChange, androidx.compose.ui.graphics.Color(0xFF3E8E5A))
+                ThemeOption("قرمز", "red", themeChoice, onThemeChoiceChange, androidx.compose.ui.graphics.Color(0xFFA33B3B))
             }
 
             Spacer(Modifier.height(24.dp))
             Text("فونت متن", style = MaterialTheme.typography.bodyLarge)
             Spacer(Modifier.height(8.dp))
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 com.example.bookapp.ui.theme.FontChoiceLabels.forEach { (key, label) ->
                     ThemeOption(label, key, fontChoice, onFontChoiceChange)
@@ -209,7 +219,7 @@ fun SettingsScreen(
                         syncMessage = if (result.isSuccess) {
                             "محتوا با موفقیت به‌روزرسانی شد ✅"
                         } else {
-                            "خطا در بروزرسانی — اتصال اینترنت را بررسی کنید ❌"
+                            "خطا در بروزرسانی: ${result.exceptionOrNull()?.message ?: "اتصال اینترنت را بررسی کنید"} ❌"
                         }
                     }
                 },
@@ -278,11 +288,26 @@ private fun LineSpacingOption(label: String, value: Float, current: Float, onSel
 }
 
 @Composable
-private fun ThemeOption(label: String, value: String, current: String, onSelect: (String) -> Unit) {
+private fun ThemeOption(
+    label: String,
+    value: String,
+    current: String,
+    onSelect: (String) -> Unit,
+    swatchColor: androidx.compose.ui.graphics.Color? = null
+) {
     FilterChip(
         selected = current == value,
         onClick = { onSelect(value) },
-        label = { Text(label) }
+        label = { Text(label) },
+        leadingIcon = swatchColor?.let {
+            {
+                Box(
+                    modifier = Modifier
+                        .size(14.dp)
+                        .background(it, shape = androidx.compose.foundation.shape.CircleShape)
+                )
+            }
+        }
     )
 }
 

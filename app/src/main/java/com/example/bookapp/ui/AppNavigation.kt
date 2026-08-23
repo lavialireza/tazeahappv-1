@@ -44,6 +44,7 @@ private const val ROUTE_SEARCH = "search"
 private const val ROUTE_BOOKMARKS = "bookmarks"
 private const val ROUTE_NOTES = "notes"
 private const val ROUTE_MY_ROLE = "my_role"
+private const val ROUTE_ALL_IMAGES = "all_images"
 private const val ROUTE_REHEARSAL = "rehearsal/{roleId}/{roleTitle}"
 private const val ROUTE_ABOUT = "about"
 private const val ROUTE_SETTINGS = "settings"
@@ -155,6 +156,7 @@ fun AppNavigation(
                 onOpenSearch = { navController.navigate(ROUTE_SEARCH) },
                 onOpenBookmarks = { navController.navigate(ROUTE_BOOKMARKS) },
                 onOpenNotes = { navController.navigate(ROUTE_NOTES) },
+                onOpenGallery = { navController.navigate(ROUTE_ALL_IMAGES) },
                 onOpenMyRole = { navController.navigate(ROUTE_MY_ROLE) },
                 onOpenAbout = { navController.navigate(ROUTE_ABOUT) },
                 onOpenSettings = { navController.navigate(ROUTE_SETTINGS) },
@@ -266,6 +268,22 @@ fun AppNavigation(
                     Prefs.clearMyRole(context, item.taziehId)
                     scope.launch { reloadMyRoles() }
                 },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(ROUTE_ALL_IMAGES) {
+            var images by remember { mutableStateOf(listOf<GalleryImageItem>()) }
+            LaunchedEffect(Unit) {
+                val taziehs = db.taziehDao().getAll()
+                images = taziehs.flatMap { tazieh ->
+                    db.taziehImageDao().getByTazieh(tazieh.id).map { img ->
+                        GalleryImageItem(img.id, img.filePath, img.caption, tazieh.title)
+                    }
+                }
+            }
+            AllImagesGalleryScreen(
+                images = images,
                 onBack = { navController.popBackStack() }
             )
         }
@@ -733,6 +751,7 @@ fun AppNavigation(
             val startIndex = backStackEntry.arguments?.getString("startIndex")?.toIntOrNull() ?: 0
             var sections by remember { mutableStateOf(listOf<SectionEntity>()) }
             var bookmarkVersion by remember { mutableIntStateOf(0) }
+            val scope = androidx.compose.runtime.rememberCoroutineScope()
             LaunchedEffect(roleId) {
                 sections = db.sectionDao().getByRole(roleId)
             }
@@ -751,6 +770,24 @@ fun AppNavigation(
                     },
                     onOpenSearch = { navController.navigate(ROUTE_SEARCH) },
                     onOpenSettings = { navController.navigate(ROUTE_SETTINGS) },
+                    onAttachAudio = { sectionId, uri ->
+                        scope.launch {
+                            val path = com.example.bookapp.data.copyAudioToAppStorage(context, uri)
+                            if (path != null) {
+                                db.sectionDao().updateAudioUrl(sectionId, path)
+                                sections = db.sectionDao().getByRole(roleId)
+                            }
+                        }
+                    },
+                    onRemoveAudio = { sectionId ->
+                        scope.launch {
+                            sections.find { it.id == sectionId }?.audioUrl?.let {
+                                com.example.bookapp.data.deleteAudioFromAppStorage(it)
+                            }
+                            db.sectionDao().updateAudioUrl(sectionId, null)
+                            sections = db.sectionDao().getByRole(roleId)
+                        }
+                    },
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -764,6 +801,8 @@ fun AppNavigation(
             var relatedSections by remember { mutableStateOf(listOf<com.example.bookapp.data.SearchResult>()) }
             var sectionAudioUrl by remember { mutableStateOf<String?>(null) }
             var footnotes by remember { mutableStateOf(listOf<com.example.bookapp.data.FootnoteEntity>()) }
+            var siblingSections by remember { mutableStateOf(listOf<com.example.bookapp.data.SectionEntity>()) }
+            var siblingIndex by remember { mutableStateOf(-1) }
             val scope = androidx.compose.runtime.rememberCoroutineScope()
 
             suspend fun reloadFootnotes() {
@@ -780,6 +819,8 @@ fun AppNavigation(
                 Prefs.markSectionRead(context, sectionId)
                 relatedSections = db.searchDao().getRelatedByTitle(section.title, sectionId)
                 reloadFootnotes()
+                siblingSections = db.sectionDao().getByRole(section.roleId)
+                siblingIndex = siblingSections.indexOfFirst { it.id == sectionId }
             }
             TextScreen(
                 title = title,
@@ -813,6 +854,30 @@ fun AppNavigation(
                 },
                 onOpenSearch = { navController.navigate(ROUTE_SEARCH) },
                 onOpenSettings = { navController.navigate(ROUTE_SETTINGS) },
+                hasPrevSection = siblingIndex > 0,
+                hasNextSection = siblingIndex in 0 until siblingSections.size - 1,
+                onPrevSection = {
+                    if (siblingIndex > 0) navController.navigate("text/${siblingSections[siblingIndex - 1].id}")
+                },
+                onNextSection = {
+                    if (siblingIndex in 0 until siblingSections.size - 1) navController.navigate("text/${siblingSections[siblingIndex + 1].id}")
+                },
+                onAttachAudio = { uri ->
+                    scope.launch {
+                        val path = com.example.bookapp.data.copyAudioToAppStorage(context, uri)
+                        if (path != null) {
+                            db.sectionDao().updateAudioUrl(sectionId, path)
+                            sectionAudioUrl = path
+                        }
+                    }
+                },
+                onRemoveAudio = {
+                    scope.launch {
+                        sectionAudioUrl?.let { com.example.bookapp.data.deleteAudioFromAppStorage(it) }
+                        db.sectionDao().updateAudioUrl(sectionId, null)
+                        sectionAudioUrl = null
+                    }
+                },
                 onBack = { navController.popBackStack() }
             )
         }

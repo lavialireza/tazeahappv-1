@@ -151,10 +151,12 @@ suspend fun syncLocalContentFiles(context: Context, db: AppDatabase) {
  */
 suspend fun syncRemoteContent(
     db: AppDatabase,
-    url: String = "https://raw.githubusercontent.com/lavialireza/taziehapp/main/app/src/main/assets/content/001_sample.json"
+    url: String = "https://raw.githubusercontent.com/lavialireza/tazeahappv-1/main/app/src/main/assets/content/001_sample.json"
 ): Result<Unit> {
     return try {
-        val jsonText = withHttpGet(url)
+        val jsonText = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            withHttpGet(url)
+        }
         mergeContentFromJson(db, jsonText)
         Result.success(Unit)
     } catch (e: Exception) {

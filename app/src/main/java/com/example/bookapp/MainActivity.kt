@@ -1,6 +1,7 @@
 package com.example.bookapp
 
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +23,9 @@ import com.example.bookapp.ui.theme.typographyFor
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // صفحه گوشی در حین استفاده از برنامه خاموش/قفل نشود (مثلاً هنگام تمرین یا اجرای تعزیه)
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         // اگر اپ از طریق میان‌بر فشار طولانی روی آیکون باز شده، مقصد را می‌خوانیم
         val shortcutTarget = intent?.getStringExtra("shortcut_target")
