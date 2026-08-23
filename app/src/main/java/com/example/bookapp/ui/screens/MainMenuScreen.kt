@@ -42,6 +42,7 @@ fun MainMenuScreen(
     onOpenAbout: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenVersion: () -> Unit,
+    onOpenChangelog: () -> Unit,
     onItemClick: (SearchResult) -> Unit
 ) {
     Scaffold(
@@ -106,6 +107,8 @@ fun MainMenuScreen(
             MenuCard("تنظیمات", Icons.Filled.Settings, onOpenSettings)
             Spacer(Modifier.height(10.dp))
             MenuCard("ورژن برنامه", null, onOpenVersion)
+            Spacer(Modifier.height(10.dp))
+            MenuCard("چه چیزی جدید است؟", null, onOpenChangelog)
 
             if (recentItems.isNotEmpty()) {
                 Spacer(Modifier.height(20.dp))

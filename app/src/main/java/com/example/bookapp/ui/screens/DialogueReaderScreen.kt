@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -56,11 +57,26 @@ fun DialogueReaderScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+            // به هر نقش، به ترتیب ظاهر شدنش در گفتگو، یکی از دو رنگ پس‌زمینه ثابت
+            // اختصاص داده می‌شود تا نقش‌های مختلف در گفتگو به‌وضوح از هم قابل تشخیص باشند
+            val roleColorIndex = remember(turns) {
+                val seen = linkedSetOf<String>()
+                turns.forEach { seen.add(it.roleTitle) }
+                seen.withIndex().associate { (i, roleTitle) -> roleTitle to (i % 2) }
+            }
+
             turns.forEachIndexed { index, turn ->
+                val isSecondColor = roleColorIndex[turn.roleTitle] == 1
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
                     shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isSecondColor) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant
+                        }
+                    )
                 ) {
                     Column(Modifier.padding(14.dp)) {
                         Row(

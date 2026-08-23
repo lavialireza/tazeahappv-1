@@ -49,6 +49,7 @@ private const val ROUTE_REHEARSAL = "rehearsal/{roleId}/{roleTitle}"
 private const val ROUTE_ABOUT = "about"
 private const val ROUTE_SETTINGS = "settings"
 private const val ROUTE_VERSION = "version"
+private const val ROUTE_CHANGELOG = "changelog"
 private const val ROUTE_FIELDS = "fields"
 private const val ROUTE_TAZIEHS = "taziehs/{fieldId}/{fieldTitle}"
 private const val ROUTE_ROLES = "roles/{taziehId}/{taziehTitle}"
@@ -72,7 +73,10 @@ fun AppNavigation(
     onThemeChoiceChange: (String) -> Unit,
     fontChoice: String,
     onFontChoiceChange: (String) -> Unit,
-    shortcutTarget: String?
+    keepScreenOn: Boolean,
+    onKeepScreenOnChange: (Boolean) -> Unit,
+    shortcutTarget: String?,
+    deepLinkSectionId: Long? = null
 ) {
     val context = LocalContext.current
     val db = remember { AppDatabase.getInstance(context) }
@@ -82,11 +86,13 @@ fun AppNavigation(
         syncLocalContentFiles(context, db)
     }
 
-    // مقصد بعد از ورود: اگر از میان‌بر آیکون باز شده باشد، مستقیم به آن صفحه می‌رویم
-    fun postLoginRoute(): String = when (shortcutTarget) {
-        "search" -> ROUTE_SEARCH
-        "notes" -> ROUTE_NOTES
-        "bookmarks" -> ROUTE_BOOKMARKS
+    // مقصد بعد از ورود: اگر از طریق لینک اشتراک‌گذاری یک بخش خاص باز شده باشد
+    // اولویت با آن است؛ وگرنه اگر از میان‌بر آیکون باز شده باشد، به همان مقصد می‌رویم
+    fun postLoginRoute(): String = when {
+        deepLinkSectionId != null -> "text/$deepLinkSectionId"
+        shortcutTarget == "search" -> ROUTE_SEARCH
+        shortcutTarget == "notes" -> ROUTE_NOTES
+        shortcutTarget == "bookmarks" -> ROUTE_BOOKMARKS
         else -> ROUTE_MAIN_MENU
     }
 
@@ -161,6 +167,7 @@ fun AppNavigation(
                 onOpenAbout = { navController.navigate(ROUTE_ABOUT) },
                 onOpenSettings = { navController.navigate(ROUTE_SETTINGS) },
                 onOpenVersion = { navController.navigate(ROUTE_VERSION) },
+                onOpenChangelog = { navController.navigate(ROUTE_CHANGELOG) },
                 onItemClick = { result -> navController.navigate("text/${result.sectionId}") }
             )
         }
@@ -334,6 +341,8 @@ fun AppNavigation(
                 onFontChoiceChange = onFontChoiceChange,
                 themeChoice = themeChoice,
                 onThemeChoiceChange = onThemeChoiceChange,
+                keepScreenOn = keepScreenOn,
+                onKeepScreenOnChange = onKeepScreenOnChange,
                 onSyncContent = { syncRemoteContent(db) },
                 db = db,
                 onBack = { navController.popBackStack() }
@@ -341,6 +350,29 @@ fun AppNavigation(
         }
 
         composable(ROUTE_VERSION) { VersionScreen(onBack = { navController.popBackStack() }) }
+
+        composable(ROUTE_CHANGELOG) {
+            ChangelogScreen(
+                entries = listOf(
+                    ChangelogEntry("جدید", listOf(
+                        "پشتیبان‌گیری کامل (یادداشت، بوکمارک، پاورقی، نقش من، گفتگو) با امکان ذخیره در فضای ابری یا حافظه گوشی و بازیابی",
+                        "گزارش اشکال محتوا از داخل هر متن",
+                        "تصحیح رنگ تم طلایی در حالت روشن",
+                        "امکان روشن/خاموش‌کردن قفل صفحه از تنظیمات",
+                        "پس‌زمینه متفاوت برای نقش دوم در مقایسه و گفتگو"
+                    )),
+                    ChangelogEntry("نسخه‌های قبلی", listOf(
+                        "گالری تصاویر (اختصاصی هر تعزیه + گالری عمومی در منوی اصلی)",
+                        "صدای واقعی برای بخش‌ها",
+                        "گفتگوهای چندنقشی (مثل شمر و عباس)",
+                        "فهرست تعزیه با ترتیب قابل ویرایش",
+                        "حالت تمرین و نقش من",
+                        "پاورقی برای واژه‌ها و توضیحات"
+                    ))
+                ),
+                onBack = { navController.popBackStack() }
+            )
+        }
 
         composable(ROUTE_FIELDS) {
             var items by remember { mutableStateOf(listOf<ListItemData>()) }

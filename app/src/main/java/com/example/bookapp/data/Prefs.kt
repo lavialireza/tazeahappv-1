@@ -237,4 +237,17 @@ object Prefs {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putFloat(KEY_LINE_SPACING, value).apply()
     }
+
+    private const val KEY_KEEP_SCREEN_ON = "keep_screen_on"
+
+    /** آیا صفحه گوشی حین استفاده از برنامه خاموش/قفل نشود (پیش‌فرض: فعال) */
+    fun getKeepScreenOn(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_KEEP_SCREEN_ON, true)
+    }
+
+    fun setKeepScreenOn(context: Context, value: Boolean) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(KEY_KEEP_SCREEN_ON, value).apply()
+    }
 }

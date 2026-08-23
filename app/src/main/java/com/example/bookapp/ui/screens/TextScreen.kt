@@ -176,6 +176,16 @@ fun TextScreen(
                         )
                         if (sectionId != null) {
                             DropdownMenuItem(
+                                text = { Text("اشتراک‌گذاری لینک مستقیم این بخش") },
+                                onClick = { moreExpanded = false; shareSectionLink(context, title, sectionId) }
+                            )
+                        }
+                        DropdownMenuItem(
+                            text = { Text("گزارش اشکال در این متن") },
+                            onClick = { moreExpanded = false; reportContentIssue(context, title, content, sectionId) }
+                        )
+                        if (sectionId != null) {
+                            DropdownMenuItem(
                                 text = { Text(if (audioUrl.isNullOrBlank()) "افزودن صدای واقعی" else "تعویض صدای واقعی") },
                                 onClick = { moreExpanded = false; audioPickerLauncher.launch("audio/*") }
                             )
@@ -308,6 +318,44 @@ private fun shareText(context: Context, title: String, content: String) {
         putExtra(Intent.EXTRA_TEXT, "$title\n\n$content")
     }
     context.startActivity(Intent.createChooser(intent, "اشتراک‌گذاری"))
+}
+
+private fun shareSectionLink(context: Context, title: String, sectionId: Long) {
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_SUBJECT, title)
+        putExtra(Intent.EXTRA_TEXT, "«$title» را در اپلیکیشن تعزیه ببینید:\ntaziehapp://section/$sectionId")
+    }
+    context.startActivity(Intent.createChooser(intent, "اشتراک‌گذاری لینک"))
+}
+
+/**
+ * یک ایمیل با متن بخش و شناسه‌اش آماده می‌کند تا کاربر بتواند غلط تایپی یا
+ * اشکال احتمالی حاصل از تبدیل Word→JSON را به سازنده‌ی برنامه گزارش دهد.
+ * جای‌گذارنده‌ی [ایمیل خودتان را اینجا بنویسید] باید با ایمیل واقعی جایگزین شود.
+ */
+private fun reportContentIssue(context: Context, title: String, content: String, sectionId: Long?) {
+    val body = buildString {
+        appendLine("توضیح اشکال (لطفاً اینجا بنویسید):")
+        appendLine()
+        appendLine("——————————")
+        appendLine("عنوان بخش: $title")
+        if (sectionId != null) appendLine("شناسه بخش: $sectionId")
+        appendLine("متن فعلی:")
+        appendLine(content)
+    }
+    val intent = Intent(Intent.ACTION_SENDTO).apply {
+        data = android.net.Uri.parse("mailto:")
+        putExtra(Intent.EXTRA_EMAIL, arrayOf("your-email@example.com"))
+        putExtra(Intent.EXTRA_SUBJECT, "گزارش اشکال محتوا: $title")
+        putExtra(Intent.EXTRA_TEXT, body)
+    }
+    try {
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        // اگر هیچ اپ ایمیلی نصب نبود، به‌جایش اشتراک‌گذاری عمومی نشان می‌دهیم
+        shareText(context, "گزارش اشکال: $title", body)
+    }
 }
 
 /**

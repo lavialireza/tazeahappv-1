@@ -1,5 +1,7 @@
 package com.example.bookapp.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,7 +17,6 @@ import androidx.compose.ui.unit.dp
 import com.example.bookapp.BuildConfig
 import com.example.bookapp.data.AppDatabase
 import com.example.bookapp.data.Prefs
-import com.example.bookapp.data.exportBackup
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,11 +67,11 @@ fun AboutScreen(
             Spacer(Modifier.height(24.dp))
             HorizontalDivider()
             Spacer(Modifier.height(16.dp))
-            Text("مشخصات نویسنده برنامه و گردآوری", style = MaterialTheme.typography.titleSmall)
+            Text("مشخصات طراحی و گردآوری", style = MaterialTheme.typography.titleSmall)
             Spacer(Modifier.height(8.dp))
-            Text("مهندس  علیرضا لاوی ")
+            Text("طراح و گردآورنده: [نام خودتان را اینجا بنویسید]")
             Text("نسخه: ${BuildConfig.VERSION_NAME}")
-            Text("راه ارتباطی: [alirezalavi65@gmail.com]")
+            Text("راه ارتباطی: [ایمیل یا شبکه اجتماعی]")
 
             Spacer(Modifier.height(24.dp))
             Button(onClick = {
@@ -100,6 +101,8 @@ fun SettingsScreen(
     onFontChoiceChange: (String) -> Unit,
     themeChoice: String,
     onThemeChoiceChange: (String) -> Unit,
+    keepScreenOn: Boolean,
+    onKeepScreenOnChange: (Boolean) -> Unit,
     onSyncContent: suspend () -> Result<Unit>,
     db: AppDatabase,
     onBack: () -> Unit
@@ -232,7 +235,24 @@ fun SettingsScreen(
                 Text(it, style = MaterialTheme.typography.bodySmall)
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(24.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("روشن نگه‌داشتن صفحه", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        "صفحه گوشی حین استفاده از برنامه خاموش/قفل نشود",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(checked = keepScreenOn, onCheckedChange = onKeepScreenOnChange)
+            }
+
+            Spacer(Modifier.height(24.dp))
             HorizontalDivider()
             Spacer(Modifier.height(16.dp))
 
@@ -250,18 +270,86 @@ fun SettingsScreen(
             HorizontalDivider()
             Spacer(Modifier.height(16.dp))
 
-            Text("پشتیبان‌گیری", style = MaterialTheme.typography.bodyLarge)
+            Text("پشتیبان‌گیری کامل", style = MaterialTheme.typography.bodyLarge)
             Spacer(Modifier.height(4.dp))
             Text(
-                "یادداشت‌ها و علاقه‌مندی‌های خود را در یک فایل متنی ذخیره یا اشتراک‌گذاری کنید (مثلاً برای وقتی گوشی عوض می‌کنید).",
+                "یادداشت‌ها، علاقه‌مندی‌ها، پاورقی‌ها، نقش‌های «من» و گفتگوهای شما در یک فایل ذخیره می‌شود. " +
+                    "از پنجره‌ای که باز می‌شود می‌توانید محل ذخیره را انتخاب کنید: حافظه‌ی داخلی/کارت حافظه‌ی گوشی، " +
+                    "یا اگر روی گوشی نصب باشد یک سرویس ابری مثل گوگل‌درایو.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(Modifier.height(12.dp))
-            Button(onClick = {
-                scope.launch { exportBackup(context, db) }
+
+            var backupMessage by remember { mutableStateOf<String?>(null) }
+            val createBackupLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.CreateDocument("application/json")
+            ) { uri ->
+                if (uri != null) {
+                    scope.launch {
+                        com.example.bookapp.data.writeBackupToUri(context, db, uri)
+                        backupMessage = "پشتیبان با موفقیت ذخیره شد ✅"
+                    }
+                }
+            }
+            val restoreBackupLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.OpenDocument()
+            ) { uri ->
+                if (uri != null) {
+                    scope.launch {
+                        val result = com.example.bookapp.data.restoreBackupFromUri(context, db, uri)
+                        backupMessage = if (result.isSuccess) {
+                            "بازیابی با موفقیت انجام شد ✅"
+                        } else {
+                            "خطا در بازیابی: ${result.exceptionOrNull()?.message ?: "فایل نامعتبر است"} ❌"
+                        }
+                    }
+                }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = {
+                    createBackupLauncher.launch("پشتیبان-تعزیه.json")
+                }) {
+                    Text("گرفتن پشتیبان")
+                }
+                OutlinedButton(onClick = {
+                    restoreBackupLauncher.launch(arrayOf("application/json"))
+                }) {
+                    Text("بازیابی از پشتیبان")
+                }
+            }
+            backupMessage?.let {
+                Spacer(Modifier.height(8.dp))
+                Text(it, style = MaterialTheme.typography.bodySmall)
+            }
+
+            Spacer(Modifier.height(32.dp))
+            HorizontalDivider()
+            Spacer(Modifier.height(16.dp))
+            Text("گزارش خطا", style = MaterialTheme.typography.bodyLarge)
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "اگر برنامه اخیراً برایتان کرش کرد (بسته شد)، جزئیاتش اینجا ذخیره شده؛ می‌توانید برای سازنده ارسال کنید.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(12.dp))
+            OutlinedButton(onClick = {
+                val logFile = java.io.File(context.filesDir, "last_crash.txt")
+                if (logFile.exists()) {
+                    val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", logFile)
+                    val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                        addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    context.startActivity(android.content.Intent.createChooser(intent, "ارسال گزارش خطا"))
+                } else {
+                    syncMessage = "گزارش خطایی یافت نشد"
+                }
             }) {
-                Text("خروجی گرفتن از یادداشت‌ها و علاقه‌مندی‌ها")
+                Text("ارسال آخرین گزارش خطا")
             }
         }
     }
