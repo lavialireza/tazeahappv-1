@@ -68,7 +68,7 @@ fun AboutScreen(
             Spacer(Modifier.height(16.dp))
             Text("مشخصات نویسنده برنامه و گردآوری", style = MaterialTheme.typography.titleSmall)
             Spacer(Modifier.height(8.dp))
-            Text("نویسنده و گردآورنده: علیرضا لاوی ")
+            Text("مهندس  علیرضا لاوی ")
             Text("نسخه: ${BuildConfig.VERSION_NAME}")
             Text("راه ارتباطی: [alirezalavi65@gmail.com]")
 
