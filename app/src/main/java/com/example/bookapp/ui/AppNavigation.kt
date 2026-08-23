@@ -67,6 +67,8 @@ private const val ROUTE_COMPARE = "compare/{roleAId}/{roleBId}"
 fun AppNavigation(
     darkMode: Boolean,
     onDarkModeChange: (Boolean) -> Unit,
+    autoDarkMode: Boolean,
+    onAutoDarkModeChange: (Boolean) -> Unit,
     fontScale: Float,
     onFontScaleChange: (Float) -> Unit,
     themeChoice: String,
@@ -191,6 +193,8 @@ fun AppNavigation(
                     }
                 },
                 onResultClick = { result -> navController.navigate("text/${result.sectionId}") },
+                onSearchDialogues = { query -> db.searchDao().searchDialogues(query) },
+                onDialogueResultClick = { d -> navController.navigate("dialogue_reader/${d.dialogueId}") },
                 isBookmarked = { id -> id in bookmarkedIds },
                 onToggleBookmark = { id ->
                     Prefs.toggleBookmark(context, id)
@@ -327,6 +331,7 @@ fun AppNavigation(
                 sectionsCount = sectionsCount,
                 readCount = Prefs.getReadSectionsCount(context),
                 streakDays = Prefs.getStreakDays(context),
+                activeDaysLast14 = Prefs.getActiveDaysLast(context, 14),
                 onBack = { navController.popBackStack() }
             )
         }
@@ -335,6 +340,8 @@ fun AppNavigation(
             SettingsScreen(
                 darkMode = darkMode,
                 onDarkModeChange = onDarkModeChange,
+                autoDarkMode = autoDarkMode,
+                onAutoDarkModeChange = onAutoDarkModeChange,
                 fontScale = fontScale,
                 onFontScaleChange = onFontScaleChange,
                 fontChoice = fontChoice,
@@ -669,6 +676,12 @@ fun AppNavigation(
                     scope.launch {
                         db.dialogueTurnDao().deleteTurn(turn.turnId)
                         reloadTurns()
+                    }
+                },
+                onExportPdf = {
+                    scope.launch {
+                        val triples = turns.map { Triple(it.roleTitle, it.sectionTitle, it.content) }
+                        com.example.bookapp.data.exportDialogueToPdf(context, dialogueTitle, triples)
                     }
                 },
                 onBack = { navController.popBackStack() }

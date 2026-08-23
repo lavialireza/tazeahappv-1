@@ -28,6 +28,7 @@ fun AboutScreen(
     sectionsCount: Int,
     readCount: Int,
     streakDays: Int,
+    activeDaysLast14: List<Boolean> = emptyList(),
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -63,6 +64,23 @@ fun AboutScreen(
             if (streakDays > 1) {
                 Text("$streakDays روز متوالی سر زده‌اید 🔥")
             }
+            if (activeDaysLast14.isNotEmpty()) {
+                Spacer(Modifier.height(12.dp))
+                Text("۱۴ روز اخیر:", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    activeDaysLast14.forEach { active ->
+                        Box(
+                            modifier = Modifier
+                                .size(16.dp)
+                                .background(
+                                    if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                    shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+                                )
+                        )
+                    }
+                }
+            }
 
             Spacer(Modifier.height(24.dp))
             HorizontalDivider()
@@ -95,6 +113,8 @@ fun AboutScreen(
 fun SettingsScreen(
     darkMode: Boolean,
     onDarkModeChange: (Boolean) -> Unit,
+    autoDarkMode: Boolean,
+    onAutoDarkModeChange: (Boolean) -> Unit,
     fontScale: Float,
     onFontScaleChange: (Float) -> Unit,
     fontChoice: String,
@@ -138,7 +158,24 @@ fun SettingsScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text("حالت شب (تیره)", style = MaterialTheme.typography.bodyLarge)
-                Switch(checked = darkMode, onCheckedChange = onDarkModeChange)
+                Switch(checked = darkMode, onCheckedChange = onDarkModeChange, enabled = !autoDarkMode)
+            }
+
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("تاریک خودکار بر اساس ساعت", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        "بین ساعت ۱۸ تا ۶ صبح خودکار به حالت تیره می‌رود",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(checked = autoDarkMode, onCheckedChange = onAutoDarkModeChange)
             }
 
             Spacer(Modifier.height(24.dp))

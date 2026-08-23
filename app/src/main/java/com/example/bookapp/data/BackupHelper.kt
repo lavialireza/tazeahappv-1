@@ -26,7 +26,6 @@ suspend fun buildBackupJson(context: Context, db: AppDatabase): String {
     val notesArr = JSONArray()
     db.noteDao().getAll().forEach { note ->
         notesArr.put(JSONObject().apply {
-            put("sectionId", note.sectionId)
             put("title", note.title)
             put("content", note.content)
         })
@@ -112,7 +111,7 @@ suspend fun restoreBackupFromUri(context: Context, db: AppDatabase, uri: Uri): R
         for (i in 0 until notesArr.length()) {
             val o = notesArr.getJSONObject(i)
             db.noteDao().insert(
-                NoteEntity(sectionId = o.getLong("sectionId"), title = o.getString("title"), content = o.getString("content"))
+                NoteEntity(title = o.getString("title"), content = o.getString("content"))
             )
         }
 

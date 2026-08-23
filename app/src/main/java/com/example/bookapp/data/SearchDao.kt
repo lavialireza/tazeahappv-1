@@ -36,7 +36,24 @@ interface SearchDao {
            OR sections.content LIKE '%' || :query || '%'
            OR roles.title LIKE '%' || :query || '%'
            OR taziehs.title LIKE '%' || :query || '%'
-        ORDER BY fields.title, taziehs.title, roles.title
+
+        UNION
+
+        SELECT
+            sections.id AS sectionId,
+            sections.title AS sectionTitle,
+            roles.title AS roleTitle,
+            taziehs.title AS taziehTitle,
+            fields.title AS fieldTitle
+        FROM footnotes
+        INNER JOIN sections ON footnotes.sectionId = sections.id
+        INNER JOIN roles ON sections.roleId = roles.id
+        INNER JOIN taziehs ON roles.taziehId = taziehs.id
+        INNER JOIN fields ON taziehs.fieldId = fields.id
+        WHERE footnotes.term LIKE '%' || :query || '%'
+           OR footnotes.explanation LIKE '%' || :query || '%'
+
+        ORDER BY fieldTitle, taziehTitle, roleTitle
         LIMIT 200
         """
     )
@@ -156,4 +173,21 @@ interface SearchDao {
         """
     )
     suspend fun getRelatedByTitle(sectionTitle: String, excludeSectionId: Long): List<SearchResult>
+
+    @Query(
+        """
+        SELECT dialogues.id AS dialogueId, dialogues.title AS dialogueTitle, taziehs.title AS taziehTitle
+        FROM dialogues
+        INNER JOIN taziehs ON dialogues.taziehId = taziehs.id
+        WHERE dialogues.title LIKE '%' || :query || '%'
+        LIMIT 50
+        """
+    )
+    suspend fun searchDialogues(query: String): List<DialogueSearchResult>
 }
+
+data class DialogueSearchResult(
+    val dialogueId: Long,
+    val dialogueTitle: String,
+    val taziehTitle: String
+)

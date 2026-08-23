@@ -27,6 +27,17 @@ suspend fun exportTaziehToPdf(context: Context, taziehTitle: String, roles: List
     exportPdfInternal(context, taziehTitle, roles)
 }
 
+/**
+ * خروجی PDF از یک گفتگو: هر نوبت به‌عنوان یک بخش مستقل با نام نقش‌گوینده‌اش
+ * به‌ترتیب چاپ می‌شود، شبیه یک نمایش‌نامه.
+ */
+suspend fun exportDialogueToPdf(context: Context, dialogueTitle: String, turns: List<Triple<String, String, String>>) {
+    val roles = turns.map { (roleTitle, sectionTitle, content) ->
+        roleTitle to listOf(SectionEntity(id = 0, roleId = 0, orderIndex = 0, title = sectionTitle, content = content))
+    }
+    exportPdfInternal(context, dialogueTitle, roles)
+}
+
 private suspend fun exportPdfInternal(
     context: Context,
     documentTitle: String,

@@ -49,7 +49,10 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            var darkMode by remember { mutableStateOf(Prefs.isDarkMode(this)) }
+            var autoDarkMode by remember { mutableStateOf(Prefs.getAutoDarkMode(this)) }
+            var darkMode by remember {
+                mutableStateOf(if (autoDarkMode) Prefs.isNightTimeNow() else Prefs.isDarkMode(this))
+            }
             var fontScale by remember { mutableFloatStateOf(Prefs.getFontScale(this)) }
             var themeChoice by remember { mutableStateOf(Prefs.getThemeChoice(this)) }
             var fontChoice by remember { mutableStateOf(Prefs.getFontChoice(this)) }
@@ -80,6 +83,12 @@ class MainActivity : ComponentActivity() {
                             onDarkModeChange = {
                                 darkMode = it
                                 Prefs.setDarkMode(this, it)
+                            },
+                            autoDarkMode = autoDarkMode,
+                            onAutoDarkModeChange = {
+                                autoDarkMode = it
+                                Prefs.setAutoDarkMode(this, it)
+                                if (it) darkMode = Prefs.isNightTimeNow()
                             },
                             fontScale = fontScale,
                             onFontScaleChange = {

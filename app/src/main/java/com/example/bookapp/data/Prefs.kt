@@ -117,6 +117,7 @@ object Prefs {
     private const val KEY_READ_SECTIONS = "read_sections"
     private const val KEY_LAST_READ_DAY = "last_read_day"
     private const val KEY_STREAK_DAYS = "streak_days"
+    private const val KEY_ACTIVE_DAYS = "active_days"
 
     /** ثبت اینکه یک بخش خوانده شده (برای آمار تعداد کل)، و به‌روزرسانی روزهای متوالی مطالعه */
     fun markSectionRead(context: Context, sectionId: Long) {
@@ -133,6 +134,18 @@ object Prefs {
             lastDay == today - 1 -> prefs.edit().putInt(KEY_STREAK_DAYS, streak + 1).putInt(KEY_LAST_READ_DAY, today).apply()
             else -> prefs.edit().putInt(KEY_STREAK_DAYS, 1).putInt(KEY_LAST_READ_DAY, today).apply()
         }
+
+        val activeDays = prefs.getStringSet(KEY_ACTIVE_DAYS, emptySet())?.toMutableSet() ?: mutableSetOf()
+        activeDays.add(today.toString())
+        prefs.edit().putStringSet(KEY_ACTIVE_DAYS, activeDays).apply()
+    }
+
+    /** فعال‌بودن مطالعه در N روز اخیر (برای نمودار ساده)؛ آخرین عنصر لیست همان امروز است */
+    fun getActiveDaysLast(context: Context, days: Int = 14): List<Boolean> {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val activeDays = prefs.getStringSet(KEY_ACTIVE_DAYS, emptySet()) ?: emptySet()
+        val today = (System.currentTimeMillis() / 86_400_000L).toInt()
+        return (days - 1 downTo 0).map { offset -> (today - offset).toString() in activeDays }
     }
 
     fun getReadSectionsCount(context: Context): Int {
@@ -249,5 +262,24 @@ object Prefs {
     fun setKeepScreenOn(context: Context, value: Boolean) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putBoolean(KEY_KEEP_SCREEN_ON, value).apply()
+    }
+
+    private const val KEY_AUTO_DARK_MODE = "auto_dark_mode"
+
+    /** تاریک/روشن خودکار بر اساس ساعت گوشی (پیش‌فرض: غیرفعال، یعنی دستی) */
+    fun getAutoDarkMode(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_AUTO_DARK_MODE, false)
+    }
+
+    fun setAutoDarkMode(context: Context, value: Boolean) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(KEY_AUTO_DARK_MODE, value).apply()
+    }
+
+    /** بین ساعت ۱۸ شب تا ۶ صبح، «شب» در نظر گرفته می‌شود */
+    fun isNightTimeNow(): Boolean {
+        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        return hour >= 18 || hour < 6
     }
 }
