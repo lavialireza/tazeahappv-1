@@ -96,7 +96,7 @@ fun AboutScreen(
             Text("مهندس علیرضا لاوی")
             Text("نسخه: ${BuildConfig.VERSION_NAME}")
             Text("راه ارتباطی: alirezalavi65@gmail.com")
-            Text("تافن: 09132383677")
+            Text("موبایل: 09132383677")
 
             
             Spacer(Modifier.height(24.dp))
