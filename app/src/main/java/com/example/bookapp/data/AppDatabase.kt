@@ -122,18 +122,25 @@ abstract class AppDatabase : RoomDatabase() {
  * به ترتیب (بر اساس نام فایل) به انتهای نقش‌های موجود اضافه یا نقش/تعزیه/زمینه‌ی
  * تازه ساخته می‌شود.
  */
-suspend fun syncLocalContentFiles(context: Context, db: AppDatabase) {
+/**
+ * فایل‌های JSON پوشه‌ی assets/content را که هنوز پردازش نشده‌اند (بر اساس نام فایل)
+ * به دیتابیس اضافه می‌کند و شمار فایل‌های تازه‌ی اضافه‌شده را برمی‌گرداند (۰ یعنی
+ * چیز تازه‌ای نبود). اگر این اولین اجرای برنامه نباشد (یعنی قبلاً محتوایی داشته)
+ * و چیزی واقعاً تازه اضافه شده باشد، یک اعلان محلی هم نشان داده می‌شود.
+ */
+suspend fun syncLocalContentFiles(context: Context, db: AppDatabase): Int {
     val allFiles = context.assets.list("content")?.filter { it.endsWith(".json") }?.sorted() ?: emptyList()
     var processed = Prefs.getProcessedContentFiles(context)
+    val hadContentBefore = db.fieldDao().getAll().isNotEmpty()
 
     // اگر دیتابیس به هر دلیلی (مثلاً migration مخرب بین نسخه‌ها) خالی شده باشد
     // ولی Prefs هنوز فایل‌ها را «پردازش‌شده» می‌داند، باید همه چیز دوباره بارگذاری شود.
-    if (db.fieldDao().getAll().isEmpty() && processed.isNotEmpty()) {
+    if (!hadContentBefore && processed.isNotEmpty()) {
         processed = emptySet()
     }
 
     val newFiles = allFiles.filter { it !in processed }
-    if (newFiles.isEmpty()) return
+    if (newFiles.isEmpty()) return 0
 
     for (fileName in newFiles) {
         val jsonText = context.assets.open("content/$fileName")
@@ -141,6 +148,14 @@ suspend fun syncLocalContentFiles(context: Context, db: AppDatabase) {
         mergeContentFromJson(db, jsonText)
     }
     Prefs.addProcessedContentFiles(context, allFiles) // کل فهرست فعلی را به‌عنوان پردازش‌شده ثبت می‌کنیم (نه فقط newFiles، چون ممکن است processed از صفر بازنشانی شده باشد)
+
+    // فقط وقتی اعلان نشان بده که این اولین نصب نبوده (کاربر قبلاً محتوا داشته)
+    // تا کاربرِ تازه‌نصب‌کرده با یک اعلان اضافه و بی‌مورد مواجه نشود
+    if (hadContentBefore) {
+        showNewContentNotification(context, newFiles.size)
+    }
+
+    return newFiles.size
 }
 
 /**

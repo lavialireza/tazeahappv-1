@@ -205,8 +205,15 @@ fun TextScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+        ) {
+        // روی صفحه‌های بزرگ (تبلت) عرض متن محدود می‌شود تا طول خط زیاد نشود و خواندن راحت بماند
+        Column(
+            modifier = Modifier
+                .widthIn(max = 640.dp)
+                .fillMaxWidth()
                 .padding(16.dp)
-                .verticalScroll(rememberScrollState())
         ) {
             if (!tag.isNullOrBlank()) {
                 AssistChip(onClick = { showTagDialog = true }, label = { Text(tag!!) })
@@ -274,6 +281,7 @@ fun TextScreen(
                     }
                 }
             }
+        }
         }
     }
 

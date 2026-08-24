@@ -67,6 +67,16 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+            // در اندروید ۱۳ به بعد، نمایش اعلان نیاز به اجازه‌ی صریح کاربر دارد
+            val notificationPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+                contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+            ) { /* نتیجه را نادیده می‌گیریم؛ اگر رد شود فقط اعلان نشان داده نمی‌شود */ }
+            androidx.compose.runtime.LaunchedEffect(Unit) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+
             val colorScheme = colorSchemeFor(themeChoice, darkMode)
             val typography = typographyFor(fontChoice)
             val baseDensity = LocalDensity.current

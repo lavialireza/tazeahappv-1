@@ -44,7 +44,13 @@ fun AboutScreen(
             )
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
             Text(
                 "این اپلیکیشن یک کتابخانه دیجیتال از متون تعزیه است که بر اساس " +
                         "زمینه، تعزیه، نقش و بخش دسته‌بندی شده است."
@@ -85,11 +91,11 @@ fun AboutScreen(
             Spacer(Modifier.height(24.dp))
             HorizontalDivider()
             Spacer(Modifier.height(16.dp))
-            Text("نویسنده برنامه و گردآوری", style = MaterialTheme.typography.titleSmall)
+            Text("مشخصات طراحی و گردآوری", style = MaterialTheme.typography.titleSmall)
             Spacer(Modifier.height(8.dp))
-            Text("علیرضا لاوی")
+            Text("طراح و گردآورنده: [نام خودتان را اینجا بنویسید]")
             Text("نسخه: ${BuildConfig.VERSION_NAME}")
-            Text("راه ارتباطی: alirezalavi65@gmail.com")
+            Text("راه ارتباطی: [ایمیل یا شبکه اجتماعی]")
 
             Spacer(Modifier.height(24.dp))
             Button(onClick = {
@@ -257,6 +263,7 @@ fun SettingsScreen(
                         val result = onSyncContent()
                         syncing = false
                         syncMessage = if (result.isSuccess) {
+                            com.example.bookapp.data.showNewContentNotification(context, 1)
                             "محتوا با موفقیت به‌روزرسانی شد ✅"
                         } else {
                             "خطا در بروزرسانی: ${result.exceptionOrNull()?.message ?: "اتصال اینترنت را بررسی کنید"} ❌"

@@ -85,7 +85,13 @@ fun AppNavigation(
     val navController: NavHostController = rememberNavController()
 
     LaunchedEffect(Unit) {
-        syncLocalContentFiles(context, db)
+        // نوتیفیکیشن فقط برای کاربرانی که قبلاً برنامه را استفاده کرده‌اند نشان داده
+        // می‌شود؛ در اولین نصب/اجرا محتوای اولیه «تازه» محسوب نمی‌شود
+        val isReturningUser = Prefs.getProcessedContentFiles(context).isNotEmpty()
+        val newFilesCount = syncLocalContentFiles(context, db)
+        if (isReturningUser && newFilesCount > 0) {
+            com.example.bookapp.data.showNewContentNotification(context, newFilesCount)
+        }
     }
 
     // مقصد بعد از ورود: اگر از طریق لینک اشتراک‌گذاری یک بخش خاص باز شده باشد
