@@ -88,23 +88,37 @@ suspend fun buildBackupJson(context: Context, db: AppDatabase): String {
     return root.toString(2)
 }
 
-/** فایل پشتیبان JSON را در مسیری که کاربر انتخاب کرده (ابری یا حافظه گوشی) می‌نویسد */
-suspend fun writeBackupToUri(context: Context, db: AppDatabase, uri: Uri) {
+/**
+ * فایل پشتیبان JSON را در مسیری که کاربر انتخاب کرده (ابری یا حافظه گوشی) می‌نویسد.
+ * اگر رمز عبور داده شود، محتوا قبل از نوشتن با AES-GCM رمزگذاری می‌شود (چون
+ * فایل پشتیبان شامل یادداشت‌های شخصی کاربر است).
+ */
+suspend fun writeBackupToUri(context: Context, db: AppDatabase, uri: Uri, password: String? = null) {
     val json = buildBackupJson(context, db)
-    context.contentResolver.openOutputStream(uri)?.use { out ->
-        out.write(json.toByteArray(Charsets.UTF_8))
+    val bytes = if (password.isNullOrBlank()) {
+        json.toByteArray(Charsets.UTF_8)
+    } else {
+        encryptBackupText(json, password)
     }
+    context.contentResolver.openOutputStream(uri)?.use { out -> out.write(bytes) }
 }
 
 /**
- * پشتیبان JSON را از مسیر انتخابی کاربر می‌خواند و همه‌چیز را بازیابی می‌کند.
+ * پشتیبان را از مسیر انتخابی کاربر می‌خواند و همه‌چیز را بازیابی می‌کند.
  * این عملیات افزودنی است (مثل بقیه‌ی برنامه) نه جایگزینی؛ چیزی که همین الان
  * روی گوشی هست پاک نمی‌شود، فقط موارد داخل فایل پشتیبان اضافه/به‌روزرسانی می‌شوند.
+ * اگر فایل با رمز ذخیره شده باشد، باید همان رمز را برای بازیابی وارد کنید.
  */
-suspend fun restoreBackupFromUri(context: Context, db: AppDatabase, uri: Uri): Result<Unit> {
+suspend fun restoreBackupFromUri(context: Context, db: AppDatabase, uri: Uri, password: String? = null): Result<Unit> {
     return try {
-        val text = context.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }
+        val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
             ?: return Result.failure(IllegalStateException("فایل خوانده نشد"))
+
+        val text = if (password.isNullOrBlank()) {
+            String(bytes, Charsets.UTF_8)
+        } else {
+            decryptBackupBytes(bytes, password)
+        }
         val root = JSONObject(text)
 
         val notesArr = root.optJSONArray("notes") ?: JSONArray()

@@ -50,6 +50,8 @@ private const val ROUTE_ABOUT = "about"
 private const val ROUTE_SETTINGS = "settings"
 private const val ROUTE_VERSION = "version"
 private const val ROUTE_CHANGELOG = "changelog"
+private const val ROUTE_GLOSSARY = "glossary"
+private const val ROUTE_MUHARRAM_CALENDAR = "muharram_calendar"
 private const val ROUTE_FIELDS = "fields"
 private const val ROUTE_TAZIEHS = "taziehs/{fieldId}/{fieldTitle}"
 private const val ROUTE_ROLES = "roles/{taziehId}/{taziehTitle}"
@@ -176,6 +178,8 @@ fun AppNavigation(
                 onOpenSettings = { navController.navigate(ROUTE_SETTINGS) },
                 onOpenVersion = { navController.navigate(ROUTE_VERSION) },
                 onOpenChangelog = { navController.navigate(ROUTE_CHANGELOG) },
+                onOpenGlossary = { navController.navigate(ROUTE_GLOSSARY) },
+                onOpenMuharramCalendar = { navController.navigate(ROUTE_MUHARRAM_CALENDAR) },
                 onItemClick = { result -> navController.navigate("text/${result.sectionId}") }
             )
         }
@@ -383,6 +387,39 @@ fun AppNavigation(
                         "پاورقی برای واژه‌ها و توضیحات"
                     ))
                 ),
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(ROUTE_GLOSSARY) {
+            GlossaryScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(ROUTE_MUHARRAM_CALENDAR) {
+            var suggestions by remember { mutableStateOf(listOf<MuharramTaziehSuggestion>()) }
+            val countdowns = remember { com.example.bookapp.data.computeMuharramCountdowns() }
+            val scope = androidx.compose.runtime.rememberCoroutineScope()
+            LaunchedEffect(Unit) {
+                if (countdowns != null) {
+                    val allTaziehs = db.taziehDao().getAll()
+                    val results = mutableListOf<MuharramTaziehSuggestion>()
+                    com.example.bookapp.data.MUHARRAM_EVENTS.forEach { event ->
+                        allTaziehs.filter { it.title.contains(event.matchKeyword) }.forEach { t ->
+                            results.add(MuharramTaziehSuggestion(event.title, t.id, t.title))
+                        }
+                    }
+                    suggestions = results
+                }
+            }
+            MuharramCalendarScreen(
+                countdowns = countdowns,
+                suggestions = suggestions,
+                onOpenTazieh = { taziehId ->
+                    scope.launch {
+                        val tazieh = db.taziehDao().getById(taziehId)
+                        if (tazieh != null) navController.navigate("roles/$taziehId/${tazieh.title}")
+                    }
+                },
                 onBack = { navController.popBackStack() }
             )
         }
@@ -802,9 +839,14 @@ fun AppNavigation(
             val startIndex = backStackEntry.arguments?.getString("startIndex")?.toIntOrNull() ?: 0
             var sections by remember { mutableStateOf(listOf<SectionEntity>()) }
             var bookmarkVersion by remember { mutableIntStateOf(0) }
+            var breadcrumb by remember { mutableStateOf(Triple<String?, String?, String?>(null, null, null)) }
             val scope = androidx.compose.runtime.rememberCoroutineScope()
             LaunchedEffect(roleId) {
                 sections = db.sectionDao().getByRole(roleId)
+                val role = db.roleDao().getById(roleId)
+                val tazieh = db.taziehDao().getById(role.taziehId)
+                val fieldEntity = tazieh?.let { t -> db.fieldDao().getAll().find { it.id == t.fieldId } }
+                breadcrumb = Triple(fieldEntity?.title, tazieh?.title, role.title)
             }
             if (sections.isNotEmpty()) {
                 TextPagerScreen(
@@ -839,6 +881,9 @@ fun AppNavigation(
                             sections = db.sectionDao().getByRole(roleId)
                         }
                     },
+                    fieldTitle = breadcrumb.first,
+                    taziehTitle = breadcrumb.second,
+                    roleTitle = breadcrumb.third,
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -854,6 +899,7 @@ fun AppNavigation(
             var footnotes by remember { mutableStateOf(listOf<com.example.bookapp.data.FootnoteEntity>()) }
             var siblingSections by remember { mutableStateOf(listOf<com.example.bookapp.data.SectionEntity>()) }
             var siblingIndex by remember { mutableStateOf(-1) }
+            var breadcrumb by remember { mutableStateOf(Triple<String?, String?, String?>(null, null, null)) }
             val scope = androidx.compose.runtime.rememberCoroutineScope()
 
             suspend fun reloadFootnotes() {
@@ -872,6 +918,10 @@ fun AppNavigation(
                 reloadFootnotes()
                 siblingSections = db.sectionDao().getByRole(section.roleId)
                 siblingIndex = siblingSections.indexOfFirst { it.id == sectionId }
+                val role = db.roleDao().getById(section.roleId)
+                val tazieh = db.taziehDao().getById(role.taziehId)
+                val fieldEntity = tazieh?.let { t -> db.fieldDao().getAll().find { it.id == t.fieldId } }
+                breadcrumb = Triple(fieldEntity?.title, tazieh?.title, role.title)
             }
             TextScreen(
                 title = title,
@@ -905,6 +955,9 @@ fun AppNavigation(
                 },
                 onOpenSearch = { navController.navigate(ROUTE_SEARCH) },
                 onOpenSettings = { navController.navigate(ROUTE_SETTINGS) },
+                fieldTitle = breadcrumb.first,
+                taziehTitle = breadcrumb.second,
+                roleTitle = breadcrumb.third,
                 hasPrevSection = siblingIndex > 0,
                 hasNextSection = siblingIndex in 0 until siblingSections.size - 1,
                 onPrevSection = {
