@@ -91,11 +91,11 @@ fun AboutScreen(
             Spacer(Modifier.height(24.dp))
             HorizontalDivider()
             Spacer(Modifier.height(16.dp))
-            Text("مشخصات طراحی و گردآوری", style = MaterialTheme.typography.titleSmall)
+            Text("مشخصات نویسنده برنامه و گردآوری", style = MaterialTheme.typography.titleSmall)
             Spacer(Modifier.height(8.dp))
-            Text("طراح و گردآورنده: [نام خودتان را اینجا بنویسید]")
+            Text("مهندس علیرضا لاوی")
             Text("نسخه: ${BuildConfig.VERSION_NAME}")
-            Text("راه ارتباطی: [ایمیل یا شبکه اجتماعی]")
+            Text("راه ارتباطی: [09132383677]")
 
             Spacer(Modifier.height(24.dp))
             Button(onClick = {
