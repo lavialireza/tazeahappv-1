@@ -26,7 +26,10 @@ data class FieldEntity(
 data class TaziehEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val fieldId: Long,
-    val title: String
+    val title: String,
+    // مشخصات نویسنده/گردآورنده این تعزیه (اختیاری)؛ با هر بروزرسانی محتوا قابل به‌روزرسانی است
+    val author: String? = null,
+    val authorEmail: String? = null
 )
 
 // سطح ۳: نقش‌ها (شمر، امام، یزید و ...) - متعلق به یک تعزیه

@@ -564,6 +564,8 @@ fun AppNavigation(
             val taziehId = backStackEntry.arguments?.getString("taziehId")?.toLongOrNull() ?: 0L
             val taziehTitle = backStackEntry.arguments?.getString("taziehTitle") ?: ""
             var indexItems by remember { mutableStateOf(listOf<TaziehIndexItem>()) }
+            var taziehAuthor by remember { mutableStateOf<String?>(null) }
+            var taziehAuthorEmail by remember { mutableStateOf<String?>(null) }
             val scope = androidx.compose.runtime.rememberCoroutineScope()
 
             suspend fun reloadIndex() {
@@ -576,11 +578,16 @@ fun AppNavigation(
                         ?.trim() ?: ""
                     TaziehIndexItem(roleId = role.id, roleTitle = role.title, firstVerse = firstVerse)
                 }
+                val tazieh = db.taziehDao().getById(taziehId)
+                taziehAuthor = tazieh?.author
+                taziehAuthorEmail = tazieh?.authorEmail
             }
             LaunchedEffect(taziehId) { reloadIndex() }
 
             TaziehIndexScreen(
                 taziehTitle = taziehTitle,
+                author = taziehAuthor,
+                authorEmail = taziehAuthorEmail,
                 items = indexItems,
                 onItemClick = { item -> navController.navigate("text_pager/${item.roleId}/0") },
                 onExportPdf = {

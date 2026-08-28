@@ -37,6 +37,9 @@ interface TaziehDao {
     @Insert
     suspend fun insert(tazieh: TaziehEntity): Long
 
+    @Query("UPDATE taziehs SET author = :author, authorEmail = :authorEmail WHERE id = :taziehId")
+    suspend fun updateAuthor(taziehId: Long, author: String?, authorEmail: String?)
+
     @Query("DELETE FROM taziehs")
     suspend fun deleteAll()
 }
@@ -79,11 +82,17 @@ interface SectionDao {
     @Query("SELECT COALESCE(MAX(orderIndex), -1) FROM sections WHERE roleId = :roleId")
     suspend fun getMaxOrderIndex(roleId: Long): Int
 
+    @Query("SELECT * FROM sections WHERE roleId = :roleId AND title = :title LIMIT 1")
+    suspend fun getByTitle(roleId: Long, title: String): SectionEntity?
+
     @Insert
     suspend fun insert(section: SectionEntity): Long
 
     @Query("UPDATE sections SET audioUrl = :audioUrl WHERE id = :sectionId")
     suspend fun updateAudioUrl(sectionId: Long, audioUrl: String?)
+
+    @Query("UPDATE sections SET content = :content WHERE id = :sectionId")
+    suspend fun updateContent(sectionId: Long, content: String)
 
     @Query("DELETE FROM sections")
     suspend fun deleteAll()
